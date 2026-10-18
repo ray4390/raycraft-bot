@@ -1,0 +1,47 @@
+[
+  {
+    "id": "respect",
+    "title": "Respect the Community",
+    "summary": "Treat fellow players respectfully. No harassment, hate speech, bullying, or disruptive behavior."
+  },
+  {
+    "id": "griefing",
+    "title": "No Griefing",
+    "summary": "Do not damage, sabotage, or alter another player's creations without permission."
+  },
+  {
+    "id": "stealing",
+    "title": "No Stealing",
+    "summary": "Do not take another player's items or resources without their permission."
+  },
+  {
+    "id": "cheating",
+    "title": "No Cheating or Exploits",
+    "summary": "Do not use cheats, duplication exploits, TNT duplication, or other deliberate exploit abuse."
+  },
+  {
+    "id": "performance",
+    "title": "Protect Server Performance",
+    "summary": "No lag machines. Keep redstone and entity-heavy contraptions reasonable; follow staff performance guidance."
+  },
+  {
+    "id": "farms",
+    "title": "Farms and AFK",
+    "summary": "Large automatic farms are restricted, and AFK farming is not allowed. Ordinary efficient survival play is not inherently prohibited."
+  },
+  {
+    "id": "builds",
+    "title": "Build Considerately",
+    "summary": "Avoid disruptive or unsightly exposed builds. Conceal purely functional builds where practical."
+  },
+  {
+    "id": "discord",
+    "title": "Use Discord Responsibly",
+    "summary": "No spam, scams, malicious links, or deliberate disruption of community channels."
+  },
+  {
+    "id": "other",
+    "title": "Follow Staff Guidance",
+    "summary": "Follow published RayCraft rules and reasonable staff directions. Ask staff if a specific mechanic is unclear."
+  }
+]
