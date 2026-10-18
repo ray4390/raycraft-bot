@@ -7,7 +7,7 @@ on:
       - '.github/workflows/build-raycraft-metrics.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,6 +22,17 @@ jobs:
           cache-dependency-path: paper-metrics/pom.xml
       - name: Compile metrics collector
         run: mvn -B -ntp -f paper-metrics/pom.xml clean package
+      - name: Publish verified collector JAR and checksum
+        run: |
+          set -euo pipefail
+          mkdir -p paper-metrics/dist
+          cp paper-metrics/target/raycraft-metrics-0.1.0.jar paper-metrics/dist/RayCraftMetrics.jar
+          sha256sum paper-metrics/dist/RayCraftMetrics.jar | cut -d ' ' -f1 > paper-metrics/dist/RayCraftMetrics.sha256
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add paper-metrics/dist/RayCraftMetrics.jar paper-metrics/dist/RayCraftMetrics.sha256
+          git commit -m "Publish compiled RayCraftMetrics 0.1.0 for production staging"
+          git push origin HEAD:main
       - uses: actions/upload-artifact@v4
         with:
           name: raycraft-metrics-unverified
