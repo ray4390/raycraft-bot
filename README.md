@@ -16,17 +16,23 @@ Independent Discord moderation and community-support bot for **RayCraft**, adapt
 | Action | Member | Helper | Moderator |
 |---|:---:|:---:|:---:|
 | Read rules / connection info | Yes | Yes | Yes |
-| Open / close own ticket | Yes | Yes | Yes |
-| View / claim other tickets | — | Yes | Yes |
+| Open a modmail ticket | Yes | Yes | Yes |
+| View / claim standard tickets | — | Yes | Yes |
+| Close tickets / send staff replies | — | Yes | Yes |
+| Handle appeal tickets | — | Read-only* | Yes |
 | Send rule reminders | — | Yes | Yes |
 | Record private incidents / view history | — | Yes | Yes |
 | Warn / timeout / kick / ban / purge | — | — | Yes |
+
+*Helpers may still see appeals because all posts inherit the same forum's visibility; only Moderators can claim, relay, or close them. Use a separate appeal forum for stricter secrecy.*
 
 Guild owner and members with Discord Administrator permission are considered moderators. This does not grant Helper accounts Administrator privileges. Staff role access is controlled by *Discord role IDs*, not user-supplied strings.
 
 ## Setup (not yet deployed)
 
-1. Create a new **RayCraft** Discord application and bot, separate from the PoliBot application. Enable the **Server Members Intent** in the Developer Portal; Message Content Intent is not required for these commands.
+For Debian, `scripts/install-user-service.sh` installs the bot as its own **non-root user systemd service**. It prompts for the private token with input hidden and runs tests before configuring the service. Pass the nonsecret Discord IDs through environment variables (see `.env.example`). The installer refuses to overwrite existing `.env` or service files.
+
+1. Create a new **RayCraft** Discord application and bot, separate from the PoliBot application. Enable **Server Members Intent** and **Message Content Intent** in the Developer Portal. Both are used by the bot.
 2. Invite it to the RayCraft Discord with the `bot` and `applications.commands` scopes. Grant only necessary bot permissions: View Channels, Send Messages, Read Message History, Embed Links, Manage Channels (tickets), Manage Messages (purge), Moderate Members (timeout), Kick Members and Ban Members. Do not grant Administrator. Put the bot role above members it must moderate and below owner/administrative roles.
 3. Prepare a **private staff-only forum** (not a category). **Deny View Channel to @everyone** and give Helpers, Moderators, and the bot access to the forum. Individual forum posts inherit the parent forum's visibility; a public forum is unsafe for private player reports. The bot checks this setting at startup and before forwarding DMs. Optional forum tags: `claimed`, `unclaimed`, `help`, `report`, `appeal`, `technical`, `other`. Enable Message Content Intent in the Discord Developer Portal so staff forum messages and player DMs can be relayed.
 4. Copy `.env.example` to `.env`. Fill `DISCORD_TOKEN`, `BOT_APPLICATION_ID`, `GUILD_ID`, `MODERATOR_ROLE_IDS`, `HELPER_ROLE_IDS`, `TICKET_FORUM_ID`, `MOD_LOG_CHANNEL_ID` and optional `RULES_CHANNEL_ID`. **Never reuse the PoliBot token, config.json or MongoDB database.**
@@ -56,6 +62,6 @@ Add tested deployment, live server-status read-only integration, staff ticket im
 
 ## Forum modmail privacy note
 
-**Tickets are visible to all members who can view the configured forum.** Helpers are staff; they can see appeal tickets even though only Moderators can claim, relay, or close those appeals. For restricted appeals, use a second forum with stricter permissions in a future version. Bot access requires Send Messages, Send Messages in Threads, Create Public Threads, Read Message History, Embed Links, Manage Threads/Manage Messages (archive, pin, and cleanup). It does not require Administrator. Messages beginning with `//` in the forum are staff-only notes and are not forwarded to the player.
+**Tickets are visible to all members who can view the configured forum.** The bot validates @everyone, other roles, and the specified staff roles before starting. Helpers are staff; they can see appeal tickets even though only Moderators can claim, relay, or close those appeals. For restricted appeals, use a second forum with stricter permissions in a future version. Bot access requires View Channel, Send Messages, Send Messages in Threads, Read Message History, Embed Links, Manage Threads/Manage Messages (archive, pin, and cleanup). It does not require Administrator. Messages beginning with `//` in the forum are staff-only notes and are not forwarded to the player.
 
 No secret values or credentials are stored in this repository.
