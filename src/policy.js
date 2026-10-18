@@ -39,7 +39,7 @@ function readConfig(env = process.env) {
     helperRoles: ids(env.HELPER_ROLE_IDS),
     modLogChannelId: env.MOD_LOG_CHANNEL_ID || "",
     rulesChannelId: env.RULES_CHANNEL_ID || "",
-    serverStatusChannelId: env.SERVER_STATUS_CHANNEL_ID || "",
+    serverStatusChannelId: env.SERVER_STATUS_CHANNEL_ID || "1548434412906094754",
     ticketForumId: env.TICKET_FORUM_ID || "",
     ticketPanelChannelId: env.TICKET_PANEL_CHANNEL_ID || "1561444742812794940",
     expectedBotId: env.BOT_APPLICATION_ID || "",
