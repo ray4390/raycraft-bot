@@ -62,7 +62,7 @@ async function handleInteraction(interaction, client, config, store) {
   }
   if (command === "connect") {
     return replyPrivate(interaction, {
-      embeds: [panel("Join RayCraft", "**Java:** raycraft.ddnsfree.com\n**Bedrock:** raycraft.ddnsfree.com (UDP port 19132)\n**Map:** http://map.raycraft.ddnsfree.com")]
+      embeds: [panel("Join RayCraft", "**Java:** play.raycraftmc.com\n**Bedrock:** bedrock.raycraftmc.com (UDP port 19132)\n**Map:** https://map.raycraftmc.com/\n**Discord:** https://discord.gg/AvhEy9pR8A")]
     });
   }
 }
