@@ -10,7 +10,7 @@ class Store {
     if (fs.existsSync(this.filename)) {
       this.state = JSON.parse(fs.readFileSync(this.filename, "utf8"));
     } else {
-      this.state = { cases: [], tickets: [], counters: {} };
+      this.state = { cases: [], tickets: [], counters: {}, blacklist: [] };
       this.save();
     }
     if (!Array.isArray(this.state.cases) || !Array.isArray(this.state.tickets) || !this.state.counters) {
@@ -21,6 +21,15 @@ class Store {
     const temp = this.filename + "." + process.pid + ".tmp";
     fs.writeFileSync(temp, JSON.stringify(this.state, null, 2) + "\n", { mode: 0o600 });
     fs.renameSync(temp, this.filename);
+  }
+  isBlacklisted(guildId, userId) {
+    return (this.state.blacklist || []).some((item) => item.guildId === guildId && item.userId === userId);
+  }
+  setBlacklisted(guildId, userId, enabled) {
+    const list = this.state.blacklist || [];
+    this.state.blacklist = list.filter((item) => !(item.guildId === guildId && item.userId === userId));
+    if (enabled) this.state.blacklist.push({ guildId, userId, at: new Date().toISOString() });
+    this.save();
   }
   addCase(guildId, data) {
     const id = (this.state.counters[guildId] || 0) + 1;

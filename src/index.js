@@ -25,11 +25,11 @@ const client = new Client({
 client.once(Events.ClientReady, async () => {
   try {
     const guild = await client.guilds.fetch(config.guildId);
-    await guild.commands.set(commands.map((command) => command.toJSON()));
     if (config.expectedBotId && client.user.id !== config.expectedBotId) {
       throw new Error("Logged into wrong Discord bot application. Check BOT_APPLICATION_ID");
     }
     await forumFor(client, config);
+    await guild.commands.set(commands.map((command) => command.toJSON()));
     console.log("RayCraft Bot online as " + client.user.tag + "; commands registered for " + guild.id);
     // PoliBot's reminder cadence: check every 15 minutes.
     const ticketTimer = setInterval(() => {

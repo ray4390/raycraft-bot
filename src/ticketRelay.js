@@ -25,6 +25,10 @@ async function dmMessage(message, client, config, store) {
   if (message.author.bot) return;
   const ticket = store.openTicket(config.guildId, message.author.id);
   if (!ticket) {
+    if (store.isBlacklisted(config.guildId, message.author.id)) {
+      await reaction(message, "❌");
+      return;
+    }
     const last = PROMPTS.get(message.author.id) || 0;
     if (Date.now() - last < 30000) return;
     PROMPTS.set(message.author.id, Date.now());

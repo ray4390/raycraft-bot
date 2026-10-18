@@ -35,7 +35,14 @@ const commands = [
     .addSubcommand((x) => x.setName("takeover").setDescription("Take over a claimed ticket (moderators)"))
     .addSubcommand((x) => x.setName("ping").setDescription("Set claimed ticket notification preference"))
     .addSubcommand((x) => x.setName("remind").setDescription("Run this ticket's reminder check"))
-    .addSubcommand((x) => x.setName("close").setDescription("Close and archive this ticket (staff)")),
+    .addSubcommand((x) => x.setName("close").setDescription("Close and archive this ticket (staff)"))
+    .addSubcommand((x) => x.setName("contact").setDescription("Open a staff-initiated modmail ticket")
+      .addUserOption((o) => o.setName("user").setDescription("Player").setRequired(true))
+      .addStringOption((o) => o.setName("reason").setDescription("Reason for contact").setRequired(true).setMaxLength(900)))
+    .addSubcommand((x) => x.setName("blacklist").setDescription("Block abusive modmail submissions")
+      .addUserOption((o) => o.setName("user").setDescription("Player").setRequired(true)))
+    .addSubcommand((x) => x.setName("unblacklist").setDescription("Restore modmail access")
+      .addUserOption((o) => o.setName("user").setDescription("Player").setRequired(true))),
   new ContextMenuCommandBuilder().setName("Rules Reminder").setType(ApplicationCommandType.Message)
 ];
 

@@ -32,6 +32,7 @@ function ticketEmbed(ticket) {
 }
 
 function buttons(ticket) {
+  if (ticket.status === "closed") return null;
   const controls = [];
   if (ticket.claimedBy) {
     controls.push(new ButtonBuilder().setCustomId("rct:unclaim").setLabel("Unclaim").setStyle(ButtonStyle.Secondary));
@@ -60,6 +61,23 @@ async function forumFor(client, config) {
   if (forum.permissionsFor(guild.roles.everyone)?.has(PermissionFlagsBits.ViewChannel)) {
     throw new Error("Ticket forum is visible to @everyone. Deny View Channel for @everyone before accepting tickets");
   }
+  // A per-role allow can override @everyone's deny; refuse any non-staff access.
+  await guild.roles.fetch();
+  const bot = await guild.members.fetchMe();
+  const staffRoles = new Set([...config.moderatorRoles, ...config.helperRoles, ...bot.roles.cache.keys()]);
+  for (const role of guild.roles.cache.values()) {
+    if (role.id === guild.roles.everyone.id || staffRoles.has(role.id) ||
+        role.permissions.has(PermissionFlagsBits.Administrator)) continue;
+    if (forum.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) {
+      throw new Error("Ticket forum grants access to a non-staff role: " + role.name + " (" + role.id + ")");
+    }
+  }
+  const permissions = forum.permissionsFor(bot);
+  if (!permissions?.has(PermissionFlagsBits.ViewChannel) ||
+      !permissions?.has(PermissionFlagsBits.SendMessagesInThreads) ||
+      !permissions?.has(PermissionFlagsBits.CreatePublicThreads)) {
+    throw new Error("RayCraft Bot needs View Channel, Create Public Threads, and Send Messages in Threads on the staff forum");
+  }
   return forum;
 }
 
@@ -74,6 +92,9 @@ async function promptUser(user) {
 }
 
 async function begin(interaction, client, config, store) {
+  if (store.isBlacklisted(config.guildId, interaction.user.id)) {
+    return replyPrivate(interaction, "Your account currently cannot open new modmail tickets. Contact the server owner if this is an error.");
+  }
   if (store.openTicket(config.guildId, interaction.user.id)) {
     return replyPrivate(interaction, "You already have an open ticket. Reply to this bot in DMs to continue it.");
   }
@@ -92,7 +113,7 @@ async function updateTicketPost(client, ticket) {
   if (!thread) return;
   let starter = await thread.fetchStarterMessage().catch(() => null);
   if (!starter && ticket.starterMessageId) starter = await thread.messages.fetch(ticket.starterMessageId).catch(() => null);
-  if (starter) await starter.edit({ embeds: [ticketEmbed(ticket)], components: [buttons(ticket)] });
+  if (starter) await starter.edit({ embeds: [ticketEmbed(ticket)], components: ticket.status === "closed" ? [] : [buttons(ticket)] });
   const forum = thread.parent;
   if (forum?.availableTags) {
     const desired = [ticket.category, ticket.claimedBy ? "claimed" : "unclaimed"];
@@ -147,6 +168,9 @@ async function draftInteraction(interaction, client, config, store) {
   if (prefix !== "rct") return;
   if (action === "category" && interaction.isButton()) {
     if (!CHOICES[arg]) return;
+    if (store.isBlacklisted(config.guildId, interaction.user.id)) {
+      return replyPrivate(interaction, "You cannot open new modmail tickets.");
+    }
     if (store.openTicket(config.guildId, interaction.user.id)) {
       return replyPrivate(interaction, "You already have a ticket. Reply to this bot here in DMs.");
     }
@@ -160,6 +184,7 @@ async function draftInteraction(interaction, client, config, store) {
   }
   if (action === "details" && interaction.isModalSubmit()) {
     if (!CHOICES[arg]) return;
+    if (store.isBlacklisted(config.guildId, interaction.user.id)) return replyPrivate(interaction, "You cannot open new modmail tickets.");
     const details = interaction.fields.getTextInputValue("details");
     const nonce = Date.now().toString(36);
     drafts.set(interaction.user.id, { category: arg, details, nonce, time: Date.now() });
@@ -183,6 +208,9 @@ async function draftInteraction(interaction, client, config, store) {
     }
     // Acknowledge promptly, then create the forum post. Never display ticket details in a public channel.
     await interaction.deferUpdate();
+    if (store.isBlacklisted(config.guildId, interaction.user.id)) {
+      return interaction.editReply({ content: "You cannot open new modmail tickets.", embeds: [], components: [] });
+    }
     try {
       const ticket = await createTicket(client, config, store, interaction.user, draft.category, draft.details);
       drafts.delete(interaction.user.id);
@@ -290,6 +318,35 @@ async function staffAction(interaction, client, config, store, action) {
 async function command(interaction, client, config, store) {
   const sub = interaction.options.getSubcommand();
   if (sub === "open") return begin(interaction, client, config, store);
+  if (sub === "contact" || sub === "blacklist" || sub === "unblacklist") {
+    const actor = await requireStaff(interaction, config, "moderator");
+    if (!actor) return;
+    const user = interaction.options.getUser("user", true);
+    if (sub === "blacklist" || sub === "unblacklist") {
+      const blocked = sub === "blacklist";
+      store.setBlacklisted(config.guildId, user.id, blocked);
+      await audit(interaction, config, "Modmail " + (blocked ? "blacklist" : "unblacklist") + " by <@" + actor.id + "> for <@" + user.id + ">.");
+      return replyPrivate(interaction, "Modmail for " + user.username + " is now " + (blocked ? "blocked" : "allowed") + ".");
+    }
+    if (store.openTicket(config.guildId, user.id)) {
+      return replyPrivate(interaction, "That player already has an open ticket.");
+    }
+    const reason = interaction.options.getString("reason", true);
+    await interaction.deferReply({ flags: ephemeral });
+    try {
+      await user.send({ content: "RayCraft staff would like to contact you: " + reason + "\nPlease reply here to communicate through modmail.", allowedMentions: NO_MENTIONS });
+    } catch (error) {
+      return interaction.editReply("Could not DM that player, so no ticket was opened.");
+    }
+    try {
+      const ticket = await createTicket(client, config, store, user, "other", reason, true);
+      await audit(interaction, config, "Staff-initiated ticket #" + ticket.number + " opened by <@" + actor.id + "> for <@" + user.id + ">.");
+      return interaction.editReply("Staff-initiated ticket opened: <#" + ticket.channelId + ">.");
+    } catch (error) {
+      console.error("Failed to initiate staff modmail ticket:", error);
+      return interaction.editReply("Could not create the forum ticket: " + error.message);
+    }
+  }
   return staffAction(interaction, client, config, store, sub);
 }
 
