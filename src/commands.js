@@ -5,6 +5,7 @@ const { SlashCommandBuilder, ContextMenuCommandBuilder, ApplicationCommandType }
 const commands = [
   new SlashCommandBuilder().setName("rules").setDescription("Read RayCraft's community rules"),
   new SlashCommandBuilder().setName("connect").setDescription("How to join RayCraft"),
+  new SlashCommandBuilder().setName("serverstatus").setDescription("Check Minecraft Java and Bedrock server status"),
   new SlashCommandBuilder().setName("ping").setDescription("Check RayBot's connection and Discord API latency"),
   new SlashCommandBuilder().setName("help").setDescription("Browse RayBot's command directory"),
   new SlashCommandBuilder().setName("about").setDescription("About RayBot, version and uptime"),
