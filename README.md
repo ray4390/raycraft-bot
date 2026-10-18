@@ -79,3 +79,9 @@ RayBot uses a PoliBot-style ticket experience adapted for RayCraft: **yellow cat
 For role notifications to reach staff, RayBot must be permitted to mention the configured roles in the ticket forum. If they are not mentionable, give RayBot the appropriate role-mention permission for that forum instead of making all roles publicly mentionable.
 
 The **Open a Ticket** button acknowledges the interaction immediately before checking permissions or sending DMs, avoiding Discord's misleading "did not respond" failure. The existing ticket panel will be refreshed when RayBot starts; no additional setup command is required.
+
+## PoliBot-style rule reminders
+
+`/rulereminder` and right-click **Apps → Rules Reminder** now use Discord Components V2 white-accented panels, the same numbered rule-button selection layout as PoliBot (adapted to RayCraft's eight published rules), **General Reminder**, and **Cancel**. This replaces the old dropdown/preview workflow: clicking a numbered rule posts the reminder directly and shows **Reminder Sent**. Prompts expire after two minutes and only the initiating staff member can submit them.
+
+Reminders are styled sectioned posts with numbered rule headings, the official rule wording, a clear **not an official warning** notice, and **Get More Info**. More Info explains each RayCraft rule and links into private modmail. Message-context reminders reply to the selected message, mention its author, and display **Flagged Message** linking to it. `/rulereminder` posts a channel-wide reminder. Nonpunitive reminder history remains separate from formal moderation sanctions. Unlike PoliBot's political-community rules, RayBot only shows RayCraft's eight actual rules—no Politics-only channel or language rules.

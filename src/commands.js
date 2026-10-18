@@ -1,7 +1,6 @@
 "use strict";
 
 const { SlashCommandBuilder, ContextMenuCommandBuilder, ApplicationCommandType } = require("discord.js");
-const { rules } = require("./policy");
 
 const commands = [
   new SlashCommandBuilder().setName("rules").setDescription("Read RayCraft's community rules"),
@@ -55,9 +54,4 @@ const commands = [
   new ContextMenuCommandBuilder().setName("Rules Reminder").setType(ApplicationCommandType.Message)
 ];
 
-function reminderChoices() {
-  return [{ label: "General reminder", value: "general", description: "Non-specific friendly reminder" }]
-    .concat(rules.map((rule) => ({ label: rule.title.slice(0, 100), value: rule.id, description: rule.summary.replace(/\s+/g, " ").slice(0, 100) })));
-}
-
-module.exports = { commands, reminderChoices };
+module.exports = { commands };

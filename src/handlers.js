@@ -22,8 +22,7 @@ async function handleInteraction(interaction, client, config, store) {
     return reminders.begin(interaction, config, interaction.targetId);
   }
 
-  if ((interaction.isStringSelectMenu() || interaction.isButton()) &&
-      /^(rcselect|rcpost|rccancel):/.test(interaction.customId)) {
+  if (interaction.isButton() && interaction.customId?.startsWith("rcrm:")) {
     return reminders.component(interaction, config, store);
   }
 

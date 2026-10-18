@@ -257,7 +257,8 @@ async function component(interaction, config, store) {
   }
   const key = session.actorId + ":" + session.channelId;
   if (Date.now() - (cooldown.get(key) || 0) < COOLDOWN_MS) {
-    return interaction.editReply({ components: [chooser(session, config)] });
+    const remaining = Math.ceil((COOLDOWN_MS - (Date.now() - cooldown.get(key))) / 1000);
+    return interaction.followUp({ content: "Please wait " + remaining + " seconds before sending another reminder in this channel.", flags: MessageFlags.Ephemeral });
   }
 
   session.busy = true;
@@ -284,20 +285,25 @@ async function component(interaction, config, store) {
     cooldown.set(key, Date.now());
     sessions.delete(nonce);
 
-    // Reminders remain nonpunitive records, separate from formal warnings.
-    const record = store.addCase(interaction.guildId, {
-      type: "reminder", targetId: original?.author?.id ?? null,
-      actorId: interaction.user.id, reason: ruleId, channelId: session.channelId,
-      messageId: session.messageId, postedMessageId: posted.id
-    });
-    // A failed log must not trigger a duplicate reminder; the message already posted.
-    await audit(interaction, config,
-      "Non-punitive reminder #" + record.id + ": " + ruleId +
-      " by <@" + interaction.user.id + ">" +
-      (record.targetId ? " to <@" + record.targetId + ">" : ""));
-    return interaction.editReply({ components: [feedback(
+    // Confirm successful posting independently of saving history or audit logs.
+    // A storage failure cannot make staff send a duplicate reminder accidentally.
+    await interaction.editReply({ components: [feedback(
       "✅ Reminder Sent! Thank you for doing your part to keep RayCraft welcoming."
     )] });
+    try {
+      const record = store.addCase(interaction.guildId, {
+        type: "reminder", targetId: original?.author?.id ?? null,
+        actorId: interaction.user.id, reason: ruleId, channelId: session.channelId,
+        messageId: session.messageId, postedMessageId: posted.id
+      });
+      await audit(interaction, config,
+        "Non-punitive reminder #" + record.id + ": " + ruleId +
+        " by <@" + interaction.user.id + ">" +
+        (record.targetId ? " to <@" + record.targetId + ">" : ""));
+    } catch (logError) {
+      console.error("Reminder posted but case history could not be saved:", logError);
+    }
+    return;
   } catch (error) {
     console.error("Failed to send RayCraft reminder:", error);
     return interaction.editReply({ components: [feedback(
