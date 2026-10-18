@@ -4,6 +4,7 @@ const { panel, replyPrivate, requireStaff } = require("./common");
 const reminders = require("./reminders");
 const moderation = require("./moderation");
 const tickets = require("./tickets");
+const utilities = require("./utilities");
 
 async function handleInteraction(interaction, client, config, store) {
   // DM ticket category buttons and modals are allowed outside a guild, but all staff
@@ -28,9 +29,16 @@ async function handleInteraction(interaction, client, config, store) {
   if (interaction.isButton() && interaction.customId?.startsWith("rct:")) {
     return tickets.component(interaction, client, config, store);
   }
+  if ((interaction.isButton() || interaction.isStringSelectMenu()) &&
+      interaction.customId?.startsWith("rutil:")) {
+    return utilities.component(interaction, client, config);
+  }
   if (!interaction.isChatInputCommand()) return;
   const command = interaction.commandName;
 
+  if (["ping", "help", "about", "status", "modhelp", "reload", "restart", "botlogs"].includes(command)) {
+    return utilities.execute(interaction, client, config);
+  }
   if (command === "rulereminder") return reminders.begin(interaction, config);
   if (["warn", "timeout", "kick", "ban", "purge"].includes(command)) {
     return moderation.execute(interaction, config, store);

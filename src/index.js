@@ -9,6 +9,7 @@ const { handleInteraction } = require("./handlers");
 const { handleMessage } = require("./ticketRelay");
 const { sweep } = require("./ticketReminders");
 const { forumFor } = require("./tickets");
+const { logEvent } = require("./utilities");
 
 const config = readConfig();
 validateConfig(config);
@@ -31,6 +32,7 @@ client.once(Events.ClientReady, async () => {
     await forumFor(client, config);
     await guild.commands.set(commands.map((command) => command.toJSON()));
     console.log("RayCraft Bot online as " + client.user.tag + "; commands registered for " + guild.id);
+    logEvent("ready", "connected to discord");
     // PoliBot's reminder cadence: check every 15 minutes.
     const ticketTimer = setInterval(() => {
       sweep(client, config, store).catch((error) => console.error("Ticket reminder sweep failed:", error));
@@ -38,6 +40,7 @@ client.once(Events.ClientReady, async () => {
     ticketTimer.unref();
     sweep(client, config, store).catch((error) => console.error("Initial reminder sweep failed:", error));
   } catch (error) {
+    logEvent("error", "startup");
     console.error("Could not register RayCraft guild commands:", error);
     console.error("Startup configuration failure. Bot is stopping without accepting ticket messages.");
     await client.destroy();
@@ -56,7 +59,11 @@ client.on(Events.MessageCreate, async (message) => {
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await handleInteraction(interaction, client, config, store);
+    if (interaction.isChatInputCommand() && /^[a-z]{1,32}$/.test(interaction.commandName)) {
+      logEvent("command", interaction.commandName);
+    }
   } catch (error) {
+    logEvent("error", "discord interaction");
     console.error("RayCraft Bot interaction error:", error);
     if (interaction.isRepliable()) {
       try {
@@ -73,7 +80,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-client.on(Events.Error, (error) => console.error("Discord gateway error:", error));
+client.on(Events.Error, (error) => { logEvent("gateway", "error"); console.error("Discord gateway error:", error); });
 client.login(config.token).catch((error) => {
   console.error("Discord login failed:", error);
   process.exitCode = 1;

@@ -46,3 +46,18 @@ The configured `TICKET_FORUM_ID` **must not be visible to @everyone**. The bot r
 The bot requires permission to view and post in the forum and threads; it uses Discord DMs to communicate with ticket openers. Enable Server Members Intent and Message Content Intent in the Discord Developer Portal. Keep the bot's Discord role above players it must moderate, but do not grant Administrator.
 
 No Minecraft server management, RCON, or shell execution is included. Runtime case/ticket data is saved outside Git under `data/`.
+
+## Utilities (v0.2)
+
+| Command | Access | Purpose |
+|---|---|---|
+| `/ping` | Everyone | Discord gateway and API latency |
+| `/help` | Everyone | Interactive, permission-aware command menu |
+| `/about` | Everyone | Version and uptime |
+| `/status` | Helpers and Moderators | Health and memory |
+| `/modhelp` | Helpers and Moderators | Staff command reference |
+| `/reload` | Discord Administrators | Reload `config/rules.json` and sync guild commands; not executable code or .env |
+| `/botlogs` | Discord Administrators | Safe in-memory events; no raw logs or secrets |
+| `/restart` | Server owner only | Confirm a RayBot-only process restart through PM2 |
+
+Updates to JavaScript and environment settings still require `git pull --ff-only && pm2 restart raycraft-bot`. There is no automated test workflow.

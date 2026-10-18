@@ -6,6 +6,14 @@ const { rules } = require("./policy");
 const commands = [
   new SlashCommandBuilder().setName("rules").setDescription("Read RayCraft's community rules"),
   new SlashCommandBuilder().setName("connect").setDescription("How to join RayCraft"),
+  new SlashCommandBuilder().setName("ping").setDescription("Check RayBot's connection and Discord API latency"),
+  new SlashCommandBuilder().setName("help").setDescription("Browse RayBot's command directory"),
+  new SlashCommandBuilder().setName("about").setDescription("About RayBot, version and uptime"),
+  new SlashCommandBuilder().setName("status").setDescription("View RayBot's health and memory usage (staff)"),
+  new SlashCommandBuilder().setName("modhelp").setDescription("View moderation and helper commands (staff)"),
+  new SlashCommandBuilder().setName("reload").setDescription("Reload rules and synchronize commands (admins)"),
+  new SlashCommandBuilder().setName("botlogs").setDescription("View sanitized bot event history (admins)"),
+  new SlashCommandBuilder().setName("restart").setDescription("Restart RayBot under PM2 (server owner)"),
   new SlashCommandBuilder().setName("rulereminder").setDescription("Post a non-punitive rule reminder (staff)"),
   new SlashCommandBuilder().setName("warn").setDescription("Record a formal warning (moderators)")
     .addUserOption((x) => x.setName("user").setDescription("Member").setRequired(true))

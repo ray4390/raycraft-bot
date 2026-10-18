@@ -1,6 +1,28 @@
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
 const rules = require("../config/rules.json");
+
+function reloadRules() {
+  const fresh = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../config/rules.json"), "utf8"));
+  if (!Array.isArray(fresh) || fresh.length < 1 || fresh.length > 24) {
+    throw new Error("Expected 1-24 rule definitions.");
+  }
+  const seen = new Set();
+  for (const rule of fresh) {
+    if (!rule || typeof rule.id !== "string" || !/^[a-z][a-z0-9_-]{0,31}$/.test(rule.id) ||
+        seen.has(rule.id) ||
+        typeof rule.title !== "string" || !rule.title.trim() || rule.title.length > 100 ||
+        typeof rule.summary !== "string" || !rule.summary.trim() || rule.summary.length > 1000) {
+      throw new Error("Invalid or duplicate rule entry in config/rules.json.");
+    }
+    seen.add(rule.id);
+  }
+  // Update the shared array used by both command menus and the reminder handlers.
+  rules.splice(0, rules.length, ...fresh);
+  return rules.length;
+}
 
 function ids(value) {
   return String(value || "")
@@ -74,4 +96,4 @@ function reminderText(id, options = {}) {
   };
 }
 
-module.exports = { rules, ids, readConfig, validateConfig, staffLevel, authorized, canModerate, getRule, reminderText };
+module.exports = { rules, reloadRules, ids, readConfig, validateConfig, staffLevel, authorized, canModerate, getRule, reminderText };
