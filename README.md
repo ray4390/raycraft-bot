@@ -85,3 +85,11 @@ The **Open a Ticket** button acknowledges the interaction immediately before che
 `/rulereminder` and right-click **Apps → Rules Reminder** now use Discord Components V2 white-accented panels, the same numbered rule-button selection layout as PoliBot (adapted to RayCraft's eight published rules), **General Reminder**, and **Cancel**. This replaces the old dropdown/preview workflow: clicking a numbered rule posts the reminder directly and shows **Reminder Sent**. Prompts expire after two minutes and only the initiating staff member can submit them.
 
 Reminders are styled sectioned posts with numbered rule headings, the official rule wording, a clear **not an official warning** notice, and **Get More Info**. More Info explains each RayCraft rule and links into private modmail. Message-context reminders reply to the selected message, mention its author, and display **Flagged Message** linking to it. `/rulereminder` posts a channel-wide reminder. Nonpunitive reminder history remains separate from formal moderation sanctions. Unlike PoliBot's political-community rules, RayBot only shows RayCraft's eight actual rules—no Politics-only channel or language rules.
+
+## Minecraft live status
+
+RayBot provides a public `/serverstatus` command for Java and Bedrock health and online player count, using the same read-only `https://raycraftmc.com/api/status` endpoint as the website. This is separate from the staff-only `/status` command, which reports RayBot's process health.
+
+The endpoint is a Cloudflare Pages Function in `ray4390/Raycraft-Website/functions/api/status.js`. It queries the public status API from mcstatus.io (no Minecraft console/RCON credentials), caches each response for about 60 seconds per Cloudflare edge, and reports `unknown` if the upstream provider fails instead of falsely asserting the server is down.
+
+After website deployment, confirm `https://raycraftmc.com/api/status` returns JSON with `java`, `bedrock`, and `checkedAt`. Then update the bot from `main` with `cd /home/ray/raycraft-bot && git pull --ff-only && pm2 restart raycraft-bot`. Restarting RayBot registers the new slash command; this does not restart Minecraft or other PM2 processes.
