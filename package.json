@@ -1,6 +1,6 @@
 {
   "name": "raycraft-bot",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Discord helper and moderation bot for the RayCraft Minecraft community.",
   "main": "src/index.js",
