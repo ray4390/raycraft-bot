@@ -30,7 +30,18 @@ async function component(interaction, config, store) {
 
   if (type === "rcselect" && interaction.isStringSelectMenu()) {
     const selected = interaction.values[0];
-    const preview = reminderText(selected, { rulesChannelId: config.rulesChannelId });
+    let originalMessage = null;
+    if (messageId !== "0") {
+      const originalChannel = await interaction.guild.channels.fetch(channelId).catch(() => null);
+      originalMessage = await originalChannel?.messages?.fetch(messageId).catch(() => null);
+      if (!originalMessage) {
+        return interaction.update({ content: "The selected message is no longer available.", embeds: [], components: [] });
+      }
+    }
+    const preview = reminderText(selected, {
+      rulesChannelId: config.rulesChannelId,
+      mention: originalMessage ? "<@" + originalMessage.author.id + ">" : undefined
+    });
     return interaction.update({
       embeds: [panel("Preview: " + preview.title, preview.description)],
       components: [row([
