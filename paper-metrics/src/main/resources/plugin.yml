@@ -1,0 +1,5 @@
+name: RayCraftMetrics
+main: com.raycraft.metrics.RayCraftMetrics
+version: 0.1.0
+api-version: '1.21'
+description: Local read-only metrics for RayBot; no player commands, ports, or server controls.
