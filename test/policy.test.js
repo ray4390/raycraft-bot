@@ -26,12 +26,12 @@ test("helper and moderator authority is separate", () => {
   });
   const helper = member(config.helperRoles[0]);
   const mod = member(config.moderatorRoles[0], 5);
-  const other = member("123456789012345689", 3);
+  const other = member("123456789012345689", 3, "123456789012345688");
   assert.ok(authorized(helper, guild, config, "helper"));
   assert.ok(!authorized(helper, guild, config, "moderator"));
   assert.ok(authorized(mod, guild, config, "moderator"));
   assert.ok(canModerate(mod, other, guild, config));
-  assert.ok(!canModerate(mod, member("123456789012345689", 6), guild, config));
+  assert.ok(!canModerate(mod, member("123456789012345689", 6, "123456789012345690"), guild, config));
   assert.ok(!canModerate(mod, member("123456789012345689", 1, guild.ownerId), guild, config));
 });
 
