@@ -12,6 +12,7 @@ const { forumFor, updateTicketPost } = require("./tickets");
 const { logEvent } = require("./utilities");
 const ticketPanel = require("./ticketPanel");
 const { startPresence } = require("./presence");
+const statusPanel = require("./serverStatusPanel");
 
 const config = readConfig();
 validateConfig(config);
@@ -36,6 +37,7 @@ client.once(Events.ClientReady, async () => {
     console.log("RayCraft Bot online as " + client.user.tag + "; commands registered for " + guild.id);
     logEvent("ready", "connected to discord");
     startPresence(client);
+    statusPanel.start(client, config);
     ticketPanel.ensure(client, config, store).catch((error) => {
       console.error("Could not refresh the Open a Ticket panel:", error);
     });
