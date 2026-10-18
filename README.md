@@ -61,3 +61,11 @@ No Minecraft server management, RCON, or shell execution is included. Runtime ca
 | `/restart` | Server owner only | Confirm a RayBot-only process restart through PM2 |
 
 Updates to JavaScript and environment settings still require `git pull --ff-only && pm2 restart raycraft-bot`. There is no automated test workflow.
+
+## Ticket opening panel
+
+On startup, RayBot checks Discord channel `1561444742812794940` for its Open a Ticket message and posts or refreshes it without duplication. Use `/ticketpanel` as a Discord administrator to force a refresh. The button DMs the player a ticket category picker; resulting tickets are kept in the private staff forum. The bot needs View Channel, Read Message History, Send Messages, and Embed Links in the public panel channel. Set `TICKET_PANEL_CHANNEL_ID` in `.env` to override the default channel.
+
+## Rules and custom presence
+
+`config/rules.json` now contains the eight approved RayCraft rules verbatim; `/rules` and rule reminders use those texts. RayBot rotates **Custom** activities only, every 45 minutes, beginning at startup. Status messages are in `src/presence.js`; no Playing, Watching, or Listening activities are used.

@@ -5,6 +5,7 @@ const reminders = require("./reminders");
 const moderation = require("./moderation");
 const tickets = require("./tickets");
 const utilities = require("./utilities");
+const ticketPanel = require("./ticketPanel");
 
 async function handleInteraction(interaction, client, config, store) {
   // DM ticket category buttons and modals are allowed outside a guild, but all staff
@@ -26,6 +27,9 @@ async function handleInteraction(interaction, client, config, store) {
     return reminders.component(interaction, config, store);
   }
 
+  if (interaction.isButton() && interaction.customId === "rct:open") {
+    return tickets.begin(interaction, client, config, store);
+  }
   if (interaction.isButton() && interaction.customId?.startsWith("rct:")) {
     return tickets.component(interaction, client, config, store);
   }
@@ -48,9 +52,10 @@ async function handleInteraction(interaction, client, config, store) {
 
   if (command === "ticket") return tickets.command(interaction, client, config, store);
   if (command === "openticket") return tickets.begin(interaction, client, config, store);
+  if (command === "ticketpanel") return ticketPanel.command(interaction, client, config, store);
 
   if (command === "rules") {
-    const body = rules.map((rule) => "**" + rule.title + "** — " + rule.summary).join("\n\n");
+    const body = rules.map((rule, index) => "**" + (index + 1) + ". " + rule.title + "**\n" + rule.summary).join("\n\n");
     return replyPrivate(interaction, {
       embeds: [panel("RayCraft Rules", body + (config.rulesChannelId
         ? "\n\nFor the full policy, see <#" + config.rulesChannelId + ">." : ""))]

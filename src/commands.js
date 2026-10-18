@@ -36,6 +36,7 @@ const commands = [
   new SlashCommandBuilder().setName("purge").setDescription("Remove recent messages (moderators)")
     .addIntegerOption((x) => x.setName("count").setDescription("Between 1 and 100").setMinValue(1).setMaxValue(100).setRequired(true)),
   new SlashCommandBuilder().setName("openticket").setDescription("Open RayCraft modmail through DMs"),
+  new SlashCommandBuilder().setName("ticketpanel").setDescription("Post or refresh the Open a Ticket panel (admins)"),
   new SlashCommandBuilder().setName("ticket").setDescription("RayCraft staff modmail forum")
     .addSubcommand((x) => x.setName("open").setDescription("Start a private DM modmail ticket"))
     .addSubcommand((x) => x.setName("claim").setDescription("Claim this forum ticket (staff)"))
@@ -56,7 +57,7 @@ const commands = [
 
 function reminderChoices() {
   return [{ label: "General reminder", value: "general", description: "Non-specific friendly reminder" }]
-    .concat(rules.map((rule) => ({ label: rule.title.slice(0, 100), value: rule.id, description: rule.summary.slice(0, 100) })));
+    .concat(rules.map((rule) => ({ label: rule.title.slice(0, 100), value: rule.id, description: rule.summary.replace(/\s+/g, " ").slice(0, 100) })));
 }
 
 module.exports = { commands, reminderChoices };

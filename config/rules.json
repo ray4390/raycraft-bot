@@ -1,47 +1,42 @@
 [
   {
     "id": "respect",
-    "title": "Respect the Community",
-    "summary": "Treat fellow players respectfully. No harassment, hate speech, bullying, or disruptive behavior."
+    "title": "Don't be a dick.",
+    "summary": "Treat people with basic respect. No harassment, excessive toxicity, or deliberately ruining someone else's experience."
   },
   {
     "id": "griefing",
-    "title": "No Griefing",
-    "summary": "Do not damage, sabotage, or alter another player's creations without permission."
-  },
-  {
-    "id": "stealing",
-    "title": "No Stealing",
-    "summary": "Do not take another player's items or resources without their permission."
+    "title": "No griefing or stealing.",
+    "summary": "Don't damage, alter, raid, or take from another player's builds, containers, farms, or property without permission."
   },
   {
     "id": "cheating",
-    "title": "No Cheating or Exploits",
-    "summary": "Do not use cheats, duplication exploits, TNT duplication, or other deliberate exploit abuse."
+    "title": "No cheating, exploiting, or duping.",
+    "summary": "No hacked clients, X-ray, duplication glitches, exploit abuse, or other unfair advantages."
   },
   {
     "id": "performance",
-    "title": "Protect Server Performance",
-    "summary": "No lag machines. Keep redstone and entity-heavy contraptions reasonable; follow staff performance guidance."
+    "title": "No lag machines or abusive redstone.",
+    "summary": "Don't build anything intended to lag or crash the server, or anything that creates excessive entities, updates, redstone activity, or chunk loading."
   },
   {
     "id": "farms",
-    "title": "Farms and AFK",
-    "summary": "Large automatic farms are restricted, and AFK farming is not allowed. Ordinary efficient survival play is not inherently prohibited."
+    "title": "No automatic or AFK farms.",
+    "summary": "Farms may assist the player, but they may not replace the player. Fully automatic farms that generate, harvest, kill, collect, or process resources without meaningful player interaction are not allowed. AFK farming of resources, mobs, XP, or other materials is also prohibited.\n\nSemi-automatic farms are allowed when they require active player involvement. For example, a mob grinder may spawn, funnel, and damage mobs, but the player must manually kill them. Farms must still remain reasonably sized and may not create excessive lag or entity buildup."
   },
   {
     "id": "builds",
-    "title": "Build Considerately",
-    "summary": "Avoid disruptive or unsightly exposed builds. Conceal purely functional builds where practical."
+    "title": "Builds must make sense and fit their surroundings.",
+    "summary": "Don't leave giant floating platforms, exposed mob farms, technical boxes, or other ugly utility structures hanging in the sky or dominating the landscape. Technical builds, farms, redstone systems, and similar infrastructure must be incorporated into a proper build, placed underground, or otherwise reasonably concealed."
   },
   {
-    "id": "discord",
-    "title": "Use Discord Responsibly",
-    "summary": "No spam, scams, malicious links, or deliberate disruption of community channels."
+    "id": "space",
+    "title": "Respect other players' space.",
+    "summary": "Don't build on top of someone else's base or interfere with their projects without permission. Leave reasonable space between major builds and projects."
   },
   {
-    "id": "other",
-    "title": "Follow Staff Guidance",
-    "summary": "Follow published RayCraft rules and reasonable staff directions. Ask staff if a specific mechanic is unclear."
+    "id": "common-sense",
+    "title": "Use common sense.",
+    "summary": "If something obviously harms the server, exploits the game, ruins the environment, or negatively affects other players, don't do it. Staff may require problematic builds or farms to be modified or removed even if they are not specifically covered above."
   }
 ]

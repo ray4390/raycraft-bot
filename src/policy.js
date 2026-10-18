@@ -40,6 +40,7 @@ function readConfig(env = process.env) {
     modLogChannelId: env.MOD_LOG_CHANNEL_ID || "",
     rulesChannelId: env.RULES_CHANNEL_ID || "",
     ticketForumId: env.TICKET_FORUM_ID || "",
+    ticketPanelChannelId: env.TICKET_PANEL_CHANNEL_ID || "1561444742812794940",
     expectedBotId: env.BOT_APPLICATION_ID || "",
     dataFile: env.DATA_FILE || "./data/raycraft.json"
   };
@@ -85,7 +86,7 @@ function reminderText(id, options = {}) {
   if (id === "general") {
     return {
       title: "RayCraft Rules Reminder",
-      description: "Friendly reminder, " + name + ": please respect other players, their builds and belongings, and our server's fairness and performance rules." + link + "\n\nThis is a reminder, not a formal warning."
+      description: "Friendly reminder, " + name + ": please respect other players, their builds, their belongings, and their space. No cheating, griefing, lag machines, automatic or AFK farms. Build considerately and use common sense." + link + "\n\nThis is a reminder, not a formal warning."
     };
   }
   const rule = getRule(id);

@@ -31,6 +31,14 @@ class Store {
     if (enabled) this.state.blacklist.push({ guildId, userId, at: new Date().toISOString() });
     this.save();
   }
+  panelMessageId(channelId) {
+    return this.state.panelMessages?.[channelId] || null;
+  }
+  setPanelMessage(channelId, messageId) {
+    this.state.panelMessages ||= {};
+    this.state.panelMessages[channelId] = messageId;
+    this.save();
+  }
   addCase(guildId, data) {
     const id = (this.state.counters[guildId] || 0) + 1;
     this.state.counters[guildId] = id;

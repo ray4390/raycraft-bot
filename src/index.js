@@ -10,6 +10,8 @@ const { handleMessage } = require("./ticketRelay");
 const { sweep } = require("./ticketReminders");
 const { forumFor } = require("./tickets");
 const { logEvent } = require("./utilities");
+const ticketPanel = require("./ticketPanel");
+const { startPresence } = require("./presence");
 
 const config = readConfig();
 validateConfig(config);
@@ -33,6 +35,10 @@ client.once(Events.ClientReady, async () => {
     await guild.commands.set(commands.map((command) => command.toJSON()));
     console.log("RayCraft Bot online as " + client.user.tag + "; commands registered for " + guild.id);
     logEvent("ready", "connected to discord");
+    startPresence(client);
+    ticketPanel.ensure(client, config, store).catch((error) => {
+      console.error("Could not post the Open a Ticket panel:", error);
+    });
     // PoliBot's reminder cadence: check every 15 minutes.
     const ticketTimer = setInterval(() => {
       sweep(client, config, store).catch((error) => console.error("Ticket reminder sweep failed:", error));
