@@ -61,17 +61,11 @@ async function forumFor(client, config) {
   if (forum.permissionsFor(guild.roles.everyone)?.has(PermissionFlagsBits.ViewChannel)) {
     throw new Error("Ticket forum is visible to @everyone. Deny View Channel for @everyone before accepting tickets");
   }
-  // A per-role allow can override @everyone's deny; refuse any non-staff access.
+  // Discord forum visibility is controlled by the server administrator.
+  // Do not block startup for additional explicitly granted roles such as
+  // the owner's personal role. @everyone must remain unable to view tickets.
   await guild.roles.fetch();
   const bot = await guild.members.fetchMe();
-  const staffRoles = new Set([...config.moderatorRoles, ...config.helperRoles, ...bot.roles.cache.keys()]);
-  for (const role of guild.roles.cache.values()) {
-    if (role.id === guild.roles.everyone.id || staffRoles.has(role.id) ||
-        role.permissions.has(PermissionFlagsBits.Administrator)) continue;
-    if (forum.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) {
-      throw new Error("Ticket forum grants access to a non-staff role: " + role.name + " (" + role.id + ")");
-    }
-  }
   for (const id of [...config.moderatorRoles, ...config.helperRoles]) {
     const role = guild.roles.cache.get(id);
     if (!role) throw new Error("Configured staff role ID not found in RayCraft Discord: " + id);

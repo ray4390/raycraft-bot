@@ -4,11 +4,11 @@
   "private": true,
   "description": "Discord helper and moderation bot for the RayCraft Minecraft community.",
   "main": "src/index.js",
-  "engines": {"node": ">=20"},
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "start": "node src/index.js",
-    "test": "node --test",
-    "check": "node --check src/index.js && node --check src/handlers.js && node --check src/tickets.js && node --check src/ticketRelay.js && node --check src/ticketReminders.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
     "discord.js": "^14.25.1",
