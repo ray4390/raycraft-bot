@@ -1,27 +1,55 @@
 "use strict";
 require("dotenv").config();
 
-const { Client, Events, GatewayIntentBits, MessageFlags } = require("discord.js");
+const { Client, Events, GatewayIntentBits, Partials, MessageFlags } = require("discord.js");
 const { readConfig, validateConfig } = require("./policy");
 const { Store } = require("./storage");
 const { commands } = require("./commands");
 const { handleInteraction } = require("./handlers");
+const { handleMessage } = require("./ticketRelay");
+const { sweep } = require("./ticketReminders");
+const { forumFor } = require("./tickets");
 
 const config = readConfig();
 validateConfig(config);
 const store = new Store(config.dataFile);
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages]
+  intents: [
+    GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.MessageContent
+  ],
+  partials: [Partials.Channel]
 });
 
 client.once(Events.ClientReady, async () => {
   try {
     const guild = await client.guilds.fetch(config.guildId);
     await guild.commands.set(commands.map((command) => command.toJSON()));
+    if (config.expectedBotId && client.user.id !== config.expectedBotId) {
+      throw new Error("Logged into wrong Discord bot application. Check BOT_APPLICATION_ID");
+    }
+    await forumFor(client, config);
     console.log("RayCraft Bot online as " + client.user.tag + "; commands registered for " + guild.id);
+    // PoliBot's reminder cadence: check every 15 minutes.
+    const ticketTimer = setInterval(() => {
+      sweep(client, config, store).catch((error) => console.error("Ticket reminder sweep failed:", error));
+    }, 15 * 60 * 1000);
+    ticketTimer.unref();
+    sweep(client, config, store).catch((error) => console.error("Initial reminder sweep failed:", error));
   } catch (error) {
     console.error("Could not register RayCraft guild commands:", error);
+    console.error("Startup configuration failure. Bot is stopping without accepting ticket messages.");
+    await client.destroy();
     process.exitCode = 1;
+  }
+});
+
+client.on(Events.MessageCreate, async (message) => {
+  try {
+    await handleMessage(message, client, config, store);
+  } catch (error) {
+    console.error("RayCraft modmail message relay failed:", error);
   }
 });
 

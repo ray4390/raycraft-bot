@@ -17,7 +17,8 @@ function readConfig(env = process.env) {
     helperRoles: ids(env.HELPER_ROLE_IDS),
     modLogChannelId: env.MOD_LOG_CHANNEL_ID || "",
     rulesChannelId: env.RULES_CHANNEL_ID || "",
-    ticketCategoryId: env.TICKET_CATEGORY_ID || "",
+    ticketForumId: env.TICKET_FORUM_ID || "",
+    expectedBotId: env.BOT_APPLICATION_ID || "",
     dataFile: env.DATA_FILE || "./data/raycraft.json"
   };
 }

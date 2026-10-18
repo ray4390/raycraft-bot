@@ -2,13 +2,13 @@
 
 Independent Discord moderation and community-support bot for **RayCraft**, adapted from ideas and workflows in [PoliBot](https://github.com/ray4390/politibot) but intentionally isolated from the Operation Politics server.
 
-**Status:** Initial functional code, not deployed. No Discord application, production credentials, guild role IDs, or channel IDs have been configured. This repository is public; **never commit secrets or the data file.**
+**Status:** Forum-modmail implementation, not deployed. Configure a separate Discord application and credentials privately on the host. This repository is public; **never commit secrets or the data file.**
 
 ## Features
 
 - **Non-punitive rule reminders:** Staff can use `/rulereminder` or right-click a message → **Apps → Rules Reminder**. Choose a RayCraft rule or general reminder, preview it, and confirm it before posting. Replies address the selected author; the slash command posts to the current channel. Reminders are recorded as type `reminder`, never as official warnings or automatic sanctions. A short per-staff/channel cooldown discourages spam.
 - **Formal moderation:** `/warn`, `/timeout`, `/kick`, `/ban`, `/purge`; each action is limited to moderators and respects hierarchy. `/history` lets staff view case records and `/incident` records a private, non-disciplinary observation.
-- **Private support tickets:** `/ticket open` creates a private text channel in a configured category with access for the opening user, Helpers, and Moderators. Helpers can `/ticket claim`; staff or the opener can `/ticket close`. Closure disables the opener's ability to send new messages but retains the channel/messages for review. No automatic deletion.
+- **PoliBot-style forum modmail:** `/openticket` or `/ticket open` DM a category menu; users choose a category, enter an explanation in a modal, then confirm. A post is created in the private staff forum and tagged by category/unclaimed. Players reply through DMs; staff respond in the forum thread. Messages and attachment links relay both ways with ✅/❌ delivery reactions. Forum claim/unclaim/takeover/close buttons, optional claimant ping preferences, 2-hour unclaimed reminders, 12-hour claimed reminders and automatic unclaim after two unanswered warnings. Ticket threads are archived on close, never automatically deleted. Staff-only notes can be prefixed `//`.
 - **Player help:** `/rules` and `/connect` show RayCraft rules, Java/Bedrock connection details, and BlueMap.
 
 ## Role access
@@ -28,8 +28,8 @@ Guild owner and members with Discord Administrator permission are considered mod
 
 1. Create a new **RayCraft** Discord application and bot, separate from the PoliBot application. Enable the **Server Members Intent** in the Developer Portal; Message Content Intent is not required for these commands.
 2. Invite it to the RayCraft Discord with the `bot` and `applications.commands` scopes. Grant only necessary bot permissions: View Channels, Send Messages, Read Message History, Embed Links, Manage Channels (tickets), Manage Messages (purge), Moderate Members (timeout), Kick Members and Ban Members. Do not grant Administrator. Put the bot role above members it must moderate and below owner/administrative roles.
-3. Prepare a private ticket category and an optional private staff-log channel. Give Helpers and Moderators roles appropriate for access.
-4. Copy `.env.example` to `.env`. Fill `DISCORD_TOKEN`, `GUILD_ID`, `MODERATOR_ROLE_IDS`, and optional IDs. **Never reuse the PoliBot token, config.json or MongoDB database.**
+3. Prepare a **private staff-only forum** (not a category). **Deny View Channel to @everyone** and give Helpers, Moderators, and the bot access to the forum. Individual forum posts inherit the parent forum's visibility; a public forum is unsafe for private player reports. The bot checks this setting at startup and before forwarding DMs. Optional forum tags: `claimed`, `unclaimed`, `help`, `report`, `appeal`, `technical`, `other`. Enable Message Content Intent in the Discord Developer Portal so staff forum messages and player DMs can be relayed.
+4. Copy `.env.example` to `.env`. Fill `DISCORD_TOKEN`, `BOT_APPLICATION_ID`, `GUILD_ID`, `MODERATOR_ROLE_IDS`, `HELPER_ROLE_IDS`, `TICKET_FORUM_ID`, `MOD_LOG_CHANNEL_ID` and optional `RULES_CHANNEL_ID`. **Never reuse the PoliBot token, config.json or MongoDB database.**
 5. Install Node.js 20+ and run:
 
     npm install
@@ -44,12 +44,18 @@ The bot registers commands **only** within `GUILD_ID`. The state database is a s
 
 ## Production safety
 
-- Zero automatic sanctions or account-age kicks.
+- Zero automatic sanctions or account-age kicks. Automatic ticket unclaiming is administrative queue management, not a player penalty.
 - No cross-guild operation; independent bot token and storage.
 - No remote shell, Minecraft console, RCON, plugin changes, configuration writes, server restarts, or server/world access.
-- No AI auto-enforcement, no hidden message surveillance and no bulk import of PoliBot's political commands.
+- No AI auto-enforcement, no hidden message surveillance and no bulk import of PoliBot's political commands. Modmail intentionally forwards DM and staff ticket messages for support; it does not scan regular community chat.
 - Public source repository: review code and test with a non-production Discord guild before inviting it to RayCraft.
 
 ## Next phase
 
 Add tested deployment, live server-status read-only integration, staff ticket improvements (appeal routing and transcript export), and explicit audit log durability checks. Do not enable Minecraft-side actions by default.
+
+## Forum modmail privacy note
+
+**Tickets are visible to all members who can view the configured forum.** Helpers are staff; they can see appeal tickets even though only Moderators can claim, relay, or close those appeals. For restricted appeals, use a second forum with stricter permissions in a future version. Bot access requires Send Messages, Send Messages in Threads, Create Public Threads, Read Message History, Embed Links, Manage Threads/Manage Messages (archive, pin, and cleanup). It does not require Administrator. Messages beginning with `//` in the forum are staff-only notes and are not forwarded to the player.
+
+No secret values or credentials are stored in this repository.

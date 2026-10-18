@@ -27,15 +27,15 @@ const commands = [
     .addStringOption((x) => x.setName("note").setDescription("Observation").setRequired(true).setMaxLength(900)),
   new SlashCommandBuilder().setName("purge").setDescription("Remove recent messages (moderators)")
     .addIntegerOption((x) => x.setName("count").setDescription("Between 1 and 100").setMinValue(1).setMaxValue(100).setRequired(true)),
-  new SlashCommandBuilder().setName("ticket").setDescription("Private RayCraft support tickets")
-    .addSubcommand((x) => x.setName("open").setDescription("Open a support ticket")
-      .addStringOption((o) => o.setName("category").setDescription("Ticket type").setRequired(true).addChoices(
-        { name: "Player help", value: "help" }, { name: "Report griefing or theft", value: "report" },
-        { name: "Appeal", value: "appeal" }, { name: "Technical help", value: "technical" }
-      ))
-      .addStringOption((o) => o.setName("details").setDescription("Brief description").setRequired(true).setMaxLength(900)))
-    .addSubcommand((x) => x.setName("claim").setDescription("Claim the current ticket (staff)"))
-    .addSubcommand((x) => x.setName("close").setDescription("Close the current ticket")),
+  new SlashCommandBuilder().setName("openticket").setDescription("Open RayCraft modmail through DMs"),
+  new SlashCommandBuilder().setName("ticket").setDescription("RayCraft staff modmail forum")
+    .addSubcommand((x) => x.setName("open").setDescription("Start a private DM modmail ticket"))
+    .addSubcommand((x) => x.setName("claim").setDescription("Claim this forum ticket (staff)"))
+    .addSubcommand((x) => x.setName("unclaim").setDescription("Unclaim this forum ticket (staff)"))
+    .addSubcommand((x) => x.setName("takeover").setDescription("Take over a claimed ticket (moderators)"))
+    .addSubcommand((x) => x.setName("ping").setDescription("Set claimed ticket notification preference"))
+    .addSubcommand((x) => x.setName("remind").setDescription("Run this ticket's reminder check"))
+    .addSubcommand((x) => x.setName("close").setDescription("Close and archive this ticket (staff)")),
   new ContextMenuCommandBuilder().setName("Rules Reminder").setType(ApplicationCommandType.Message)
 ];
 

@@ -33,6 +33,16 @@ class Store {
   history(guildId, userId) {
     return this.state.cases.filter((item) => item.guildId === guildId && item.targetId === userId).slice(-15).reverse();
   }
+  nextTicketNumber(guildId) {
+    const key = "ticket:" + guildId;
+    const number = (this.state.counters[key] || 0) + 1;
+    this.state.counters[key] = number;
+    this.save();
+    return number;
+  }
+  activeTickets(guildId) {
+    return this.state.tickets.filter((ticket) => ticket.guildId === guildId && ticket.status === "open");
+  }
   openTicket(guildId, userId) {
     return this.state.tickets.find((ticket) => ticket.guildId === guildId && ticket.openerId === userId && ticket.status === "open");
   }

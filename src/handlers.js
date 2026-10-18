@@ -6,7 +6,11 @@ const moderation = require("./moderation");
 const tickets = require("./tickets");
 
 async function handleInteraction(interaction, client, config, store) {
-  // Hard isolation: this bot acts only inside the configured RayCraft guild.
+  // DM ticket category buttons and modals are allowed outside a guild, but all staff
+  // actions and server commands remain isolated to RayCraft.
+  if (!interaction.inGuild() && interaction.customId?.startsWith("rct:")) {
+    return tickets.draftInteraction(interaction, client, config, store);
+  }
   if (!interaction.inGuild() || interaction.guildId !== config.guildId) {
     if (interaction.isRepliable()) await replyPrivate(interaction, "RayCraft Bot is not configured for this server.");
     return;
@@ -21,6 +25,9 @@ async function handleInteraction(interaction, client, config, store) {
     return reminders.component(interaction, config, store);
   }
 
+  if (interaction.isButton() && interaction.customId?.startsWith("rct:")) {
+    return tickets.component(interaction, client, config, store);
+  }
   if (!interaction.isChatInputCommand()) return;
   const command = interaction.commandName;
 
@@ -31,12 +38,8 @@ async function handleInteraction(interaction, client, config, store) {
   if (command === "history") return moderation.history(interaction, config, store);
   if (command === "incident") return moderation.incident(interaction, config, store);
 
-  if (command === "ticket") {
-    const subcommand = interaction.options.getSubcommand();
-    return subcommand === "open"
-      ? tickets.open(interaction, client, config, store)
-      : tickets.handle(interaction, config, store);
-  }
+  if (command === "ticket") return tickets.command(interaction, client, config, store);
+  if (command === "openticket") return tickets.begin(interaction, client, config, store);
 
   if (command === "rules") {
     const body = rules.map((rule) => "**" + rule.title + "** — " + rule.summary).join("\n\n");
