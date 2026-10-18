@@ -72,11 +72,18 @@ async function forumFor(client, config) {
       throw new Error("Ticket forum grants access to a non-staff role: " + role.name + " (" + role.id + ")");
     }
   }
+  for (const id of [...config.moderatorRoles, ...config.helperRoles]) {
+    const role = guild.roles.cache.get(id);
+    if (!role) throw new Error("Configured staff role ID not found in RayCraft Discord: " + id);
+    if (!forum.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) {
+      throw new Error("Configured staff role cannot view the private ticket forum: " + role.name);
+    }
+  }
   const permissions = forum.permissionsFor(bot);
   if (!permissions?.has(PermissionFlagsBits.ViewChannel) ||
-      !permissions?.has(PermissionFlagsBits.SendMessagesInThreads) ||
-      !permissions?.has(PermissionFlagsBits.CreatePublicThreads)) {
-    throw new Error("RayCraft Bot needs View Channel, Create Public Threads, and Send Messages in Threads on the staff forum");
+      !permissions?.has(PermissionFlagsBits.SendMessages) ||
+      !permissions?.has(PermissionFlagsBits.SendMessagesInThreads)) {
+    throw new Error("RayCraft Bot needs View Channel, Send Messages, and Send Messages in Threads in the private forum");
   }
   return forum;
 }
