@@ -39,7 +39,7 @@ async function handleInteraction(interaction, client, config, store) {
   if (!interaction.isChatInputCommand()) return;
   const command = interaction.commandName;
 
-  if (["ping", "help", "about", "status", "modhelp", "reload", "restart", "botlogs"].includes(command)) {
+  if (["ping", "serverstatus", "help", "about", "status", "modhelp", "reload", "restart", "botlogs"].includes(command)) {
     return utilities.execute(interaction, client, config);
   }
   if (command === "rulereminder") return reminders.begin(interaction, config);
