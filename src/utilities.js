@@ -28,7 +28,7 @@ const mib = value => (value / (1024 * 1024)).toFixed(1);
 
 const groups = [
   { id: "general", label: "General", entries: [
-    ["/ping", "Gateway and API latency"], ["/help", "Command directory"],
+    ["/ping", "Gateway and API latency"], ["/serverstatus", "Minecraft Java and Bedrock status"], ["/help", "Command directory"],
     ["/about", "Bot version and uptime"], ["/rules", "Community rules"],
     ["/connect", "How to join RayCraft"], ["/openticket", "Open a private modmail ticket"]
   ]},
@@ -88,6 +88,35 @@ async function adminOnly(i) {
 async function execute(i, client, config) {
   const name = i.commandName;
   if (name === "help") return help(i, config);
+  if (name === "serverstatus") {
+    await i.deferReply({ flags: MessageFlags.Ephemeral });
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      let data;
+      try {
+        const response = await fetch("https://raycraftmc.com/api/status", {
+          signal: controller.signal, headers: { Accept: "application/json", "User-Agent": "RayCraft-RayBot/0.5 serverstatus" }
+        });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        data = await response.json();
+      } finally {
+        clearTimeout(timeout);
+      }
+      const format = (part) => {
+        const state = part?.state === "online" ? "🟢 Online" : part?.state === "offline" ? "🔴 Offline" : "⚪ Unavailable";
+        return state + (part?.state === "online" && Number.isSafeInteger(part.players) ? " · " + part.players + " players" : "");
+      };
+      const stamp = Number.isFinite(Date.parse(data.checkedAt)) ? "\n**Checked:** <t:" + Math.floor(Date.parse(data.checkedAt) / 1000) + ":R>" : "";
+      return i.editReply({ embeds: [panel("RayCraft Minecraft Status",
+        "**Java:** " + format(data.java) + "\n`play.raycraftmc.com`\n\n" +
+        "**Bedrock:** " + format(data.bedrock) + "\n`bedrock.raycraftmc.com:19132`" +
+        stamp + "\n\n[Website](https://raycraftmc.com) · [BlueMap](https://map.raycraftmc.com/)")] });
+    } catch (_) {
+      return i.editReply({ embeds: [panel("RayCraft Minecraft Status",
+        "Live status is temporarily unavailable. This doesn't necessarily mean the server is offline.\n\n**Java:** `play.raycraftmc.com`\n**Bedrock:** `bedrock.raycraftmc.com:19132`")] });
+    }
+  }
   if (name === "ping") {
     await i.deferReply({ flags: MessageFlags.Ephemeral });
     const began = Date.now();
