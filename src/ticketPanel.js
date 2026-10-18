@@ -13,31 +13,31 @@ function payload() {
   return {
     embeds: [
       new EmbedBuilder()
-        .setColor(0x518663)
-        .setTitle("📨  RayCraft Support & Tickets")
+        .setColor(0x3498db)
+        .setTitle("📨  RayCraft Modmail System")
         .setDescription(
-          "Need a hand? Want to report griefing or theft, appeal an action, or contact RayCraft staff?\n\n" +
-          "**Press Open a Ticket below** to start a private conversation with the staff team.\n" +
-          "RayBot will DM you a category menu and ask you to describe what you need. " +
-          "Our staff respond through the bot's private modmail system."
+          "If you need to get in touch with staff, the best way to do it and receive a timely response is through our **Modmail / Ticket System**. " +
+          "This lets you contact the right members of our team for assistance, player reports, appeals, and technical issues.\n\n" +
+          "Press **Open a Ticket** below to begin. RayBot will send you a private category menu, collect your request, and connect you with staff through DMs.\n\n" +
+          "**Your DMs must be enabled for this to work.** Abuse of the ticket system may result in losing modmail access."
         )
         .addFields(
           { name: "🧭 Player Help", value: "Questions about playing, rules, or the community.", inline: true },
-          { name: "🛡️ Player Reports", value: "Griefing, stealing, cheating, or other rule concerns.", inline: true },
+          { name: "🔨 Moderation & Reports", value: "Griefing, stealing, cheating, or other rule concerns.", inline: true },
           { name: "📋 Appeals", value: "Request a review of a moderation decision.", inline: true },
           { name: "🛠️ Technical Support", value: "Connection, cross-play, or game issues.", inline: true }
         )
         .addFields({
           name: "Before opening a ticket",
-          value: "Allow DMs from RayBot. For reports, include any relevant names, times, locations, or message links. " +
-            "Please do not share passwords or account secrets."
+          value: "Allow RayBot to DM you. For reports, include relevant player names, times, coordinates, or message links. " +
+            "Never share passwords, recovery codes, or account secrets."
         })
-        .setFooter({ text: "RayCraft • Friendly survival community • Tickets go to staff, not this channel" })
+        .setFooter({ text: "RayCraft • Messages are handled through private modmail" })
     ],
     components: [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(OPEN_BUTTON_ID)
-          .setLabel("Open a Ticket").setEmoji("📨").setStyle(ButtonStyle.Primary)
+          .setLabel("Open a Ticket").setEmoji("📩").setStyle(ButtonStyle.Primary)
       )
     ],
     allowedMentions: { parse: [] }

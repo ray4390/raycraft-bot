@@ -1,7 +1,7 @@
 "use strict";
-const { EmbedBuilder } = require("discord.js");
 const { authorized } = require("./policy");
 const tickets = require("./tickets");
+const style = require("./ticketStyle");
 
 const NO_MENTIONS = { parse: [] };
 const PROMPTS = new Map();
@@ -55,10 +55,7 @@ async function dmMessage(message, client, config, store) {
     if (thread.archived) await thread.setArchived(false);
     const now = Date.now();
     const ping = userPing(ticket, now);
-    const display = String(message.content || "").trim() || "(attachment only)";
-    const embed = new EmbedBuilder().setTitle("Player message")
-      .setColor(0x538ec1).setDescription(display.slice(0, 4000))
-      .setFooter({ text: "User ID: " + message.author.id + " • " + message.id.slice(-8) }).setTimestamp();
+    const embed = style.incomingEmbed(message);
     const files = [...message.attachments.values()].map((a) => a.url).slice(0, 10);
     await thread.send({
       content: ping ? "<@" + ticket.claimedBy + ">" : undefined,
@@ -90,14 +87,11 @@ async function staffMessage(message, client, config, store) {
   }
   // Deliberate staff-only notes, unlike ordinary thread replies, are never relayed.
   if (message.content?.startsWith("//")) return;
-  const text = String(message.content || "").trim() || "(attachment only)";
   const attachmentUrls = [...message.attachments.values()].map((attachment) => attachment.url).slice(0, 10);
   let user;
   try {
     user = await client.users.fetch(ticket.openerId);
-    const embed = new EmbedBuilder().setColor(0x4b8a67).setTitle("RayCraft Staff Reply")
-      .setDescription(text.slice(0, 4000))
-      .setFooter({ text: "Ticket #" + ticket.number + " • Staff ID: " + message.author.id.slice(-5) }).setTimestamp();
+    const embed = style.outgoingEmbed(message, ticket);
     await user.send({ embeds: [embed], allowedMentions: NO_MENTIONS });
     for (const url of attachmentUrls) {
       await user.send({ content: url, allowedMentions: NO_MENTIONS });
@@ -113,14 +107,16 @@ async function staffMessage(message, client, config, store) {
       changes.pingOptIn = false;
     }
     const updated = store.changeTicket(ticket.channelId, changes);
-    if (!ticket.claimedBy) await tickets.updateTicketPost(client, updated);
+    if (!ticket.claimedBy) {
+      await tickets.updateTicketPost(client, updated).catch(error => console.warn("Could not update automatically claimed ticket:", error.message));
+      await tickets.notifyOpener(client, ticket, "Your ticket has been claimed and is now being reviewed.");
+    }
     await reaction(message, "✅");
   } catch (error) {
     console.warn("Modmail reply failed for ticket #" + ticket.number + ":", error);
     await reaction(message, "❌");
     await message.channel.send({
-      embeds: [new EmbedBuilder().setColor(0xcc4e4e).setTitle("Message delivery failed")
-        .setDescription("The player could not be reached by DM. They may have blocked the bot or disabled direct messages.")],
+      embeds: [style.notice("I couldn't DM this player. They may have disabled DMs, blocked RayBot, or left the server.", "red", "Message Delivery Failed")],
       allowedMentions: NO_MENTIONS
     }).catch(() => {});
   }

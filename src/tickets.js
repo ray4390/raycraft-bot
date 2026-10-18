@@ -6,48 +6,33 @@ const {
   TextInputBuilder, TextInputStyle
 } = require("discord.js");
 const { authorized } = require("./policy");
-const { replyPrivate, requireStaff, audit } = require("./common");
+const { replyPrivate, requireStaff } = require("./common");
+const style = require("./ticketStyle");
 
 const drafts = new Map();
 const pending = new Set();
-const CHOICES = {
-  help: "Player Help",
-  report: "Report Griefing / Theft",
-  appeal: "Appeals",
-  technical: "Technical Support",
-  other: "Other"
-};
+const CHOICES = Object.fromEntries(Object.entries(style.categories).map(([key, value]) => [key, value.name]));
 const NO_MENTIONS = { parse: [] };
 const ephemeral = MessageFlags.Ephemeral;
 
 function ticketEmbed(ticket) {
-  return new EmbedBuilder().setColor(ticket.claimedBy ? 0x468e64 : 0xd89d43)
-    .setTitle("RayCraft Modmail #" + ticket.number)
-    .setDescription("**Player:** <@" + ticket.openerId + "> (\`" + ticket.openerId + "\`)")
-    .addFields(
-      { name: "Category", value: CHOICES[ticket.category] || ticket.category, inline: true },
-      { name: "Claimed by", value: ticket.claimedBy ? "<@" + ticket.claimedBy + ">" : "Unclaimed", inline: true },
-      { name: "Initial request", value: ticket.details.slice(0, 1024) }
-    ).setFooter({ text: "Staff-only forum. Normal thread messages are relayed to the player via DM." });
+  return style.openingEmbed(ticket);
 }
 
 function buttons(ticket) {
   if (ticket.status === "closed") return null;
   const controls = [];
   if (ticket.claimedBy) {
-    controls.push(new ButtonBuilder().setCustomId("rct:unclaim").setLabel("Unclaim").setStyle(ButtonStyle.Secondary));
-    controls.push(new ButtonBuilder().setCustomId("rct:ping").setLabel("Ping settings").setStyle(ButtonStyle.Primary));
-    controls.push(new ButtonBuilder().setCustomId("rct:takeover").setLabel("Take over").setStyle(ButtonStyle.Secondary));
-  } else controls.push(new ButtonBuilder().setCustomId("rct:claim").setLabel("Claim ticket").setStyle(ButtonStyle.Success));
+    controls.push(new ButtonBuilder().setCustomId("rct:unclaim").setLabel("Unclaim Ticket").setStyle(ButtonStyle.Secondary));
+    controls.push(new ButtonBuilder().setCustomId("rct:ping").setLabel("Ping Settings").setStyle(ButtonStyle.Primary));
+    controls.push(new ButtonBuilder().setCustomId("rct:takeover").setLabel("❗").setStyle(ButtonStyle.Secondary));
+  } else controls.push(new ButtonBuilder().setCustomId("rct:claim").setLabel("Claim Ticket").setStyle(ButtonStyle.Success));
   controls.push(new ButtonBuilder().setCustomId("rct:close").setLabel("Close ticket").setStyle(ButtonStyle.Danger));
   return new ActionRowBuilder().addComponents(controls);
 }
 
 function categoryButtons() {
-  const items = Object.entries(CHOICES).map(([key, label]) =>
-    new ButtonBuilder().setCustomId("rct:category:" + key).setLabel(label).setStyle(ButtonStyle.Secondary)
-  );
-  return new ActionRowBuilder().addComponents(items);
+  return style.categoryMenu().components[0];
 }
 
 async function forumFor(client, config) {
@@ -83,16 +68,13 @@ async function forumFor(client, config) {
 }
 
 async function promptUser(user) {
-  return user.send({
-    embeds: [new EmbedBuilder().setTitle("RayCraft Modmail")
-      .setDescription("Choose a topic below to contact RayCraft staff. Your messages will be forwarded privately to the staff ticket forum. Please provide details and avoid sending passwords or other secrets.")
-      .setColor(0x426c52)],
-    components: [categoryButtons()],
-    allowedMentions: NO_MENTIONS
-  });
+  return user.send(style.categoryMenu());
 }
 
 async function begin(interaction, client, config, store) {
+  // Acknowledge the button/slash command before ANY Discord fetch or outbound DM.
+  // This prevents "the application did not respond" even when a DM arrives.
+  await interaction.deferReply({ flags: ephemeral });
   if (store.isBlacklisted(config.guildId, interaction.user.id)) {
     return replyPrivate(interaction, "Your account currently cannot open new modmail tickets. Contact the server owner if this is an error.");
   }
@@ -102,10 +84,10 @@ async function begin(interaction, client, config, store) {
   try {
     await forumFor(client, config);
     await promptUser(interaction.user);
-    return replyPrivate(interaction, "Check your DMs to choose a ticket category and explain your request.");
+    return interaction.editReply({ embeds: [style.notice("✅ **Check your DMs to proceed!** Choose a category and complete the form to submit your ticket.", "green", "RayCraft Modmail")], content: "" });
   } catch (error) {
     console.error("Unable to open modmail prompt:", error.message);
-    return replyPrivate(interaction, "Couldn't start modmail. Check that bot DMs are enabled and the ticket forum is configured as staff-only.");
+    return interaction.editReply({ embeds: [style.notice("I couldn't send a DM or access the private ticket forum. Please enable DMs from RayBot and try again. If the issue persists, contact staff.", "red", "Unable to Start Modmail")], content: "" });
   }
 }
 
@@ -117,7 +99,7 @@ async function updateTicketPost(client, ticket) {
   if (starter) await starter.edit({ embeds: [ticketEmbed(ticket)], components: ticket.status === "closed" ? [] : [buttons(ticket)] });
   const forum = thread.parent;
   if (forum?.availableTags) {
-    const desired = [ticket.category, ticket.claimedBy ? "claimed" : "unclaimed"];
+    const desired = [ticket.category, style.categoryName(ticket.category).toLowerCase(), ticket.claimedBy ? "claimed" : "unclaimed"];
     const tags = desired.map((name) => forum.availableTags.find((t) => t.name.toLowerCase() === name)?.id).filter(Boolean);
     if (tags.length) await thread.setAppliedTags(tags).catch((err) => console.error("Could not update forum tags:", err));
   }
@@ -134,17 +116,26 @@ async function createTicket(client, config, store, user, category, details, cont
     const number = store.nextTicketNumber(config.guildId);
     const initial = {
       number, guildId: config.guildId, openerId: user.id, category,
-      details, claimedBy: null, contact, pingOptIn: false,
+      details, playerName: user.username, avatarURL: user.displayAvatarURL?.() || null,
+      claimedBy: null, contact, pingOptIn: false,
       createdAt: new Date().toISOString(), lastStaffMessageAt: null,
       lastUserMessageAt: null, lastSpeaker: null, lastClaimedAt: null
     };
     const slug = (user.username || "player").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 24) || "player";
-    const tags = [category, "unclaimed"].map((name) =>
-      forum.availableTags.find((t) => t.name.toLowerCase() === name)?.id).filter(Boolean);
+    const tags = [category, style.categoryName(category).toLowerCase(), "unclaimed"]
+      .map(name => forum.availableTags.find(t => t.name.toLowerCase() === name)?.id)
+      .filter((id, index, array) => id && array.indexOf(id) === index);
+    const roleIds = contact ? [] : style.pingRoles(initial, config);
+    const pingContent = roleIds.map(id => "<@&" + id + ">").join(" ");
     // In case of Discord post-creation failure, the ticket counter can skip a value. That is safe.
     const thread = await forum.threads.create({
       name: slug + "-" + number,
-      message: { embeds: [ticketEmbed(initial)], components: [buttons(initial)], allowedMentions: NO_MENTIONS },
+      message: {
+        content: pingContent,
+        embeds: [ticketEmbed(initial)],
+        components: [buttons(initial)],
+        allowedMentions: { parse: [], roles: roleIds }
+      },
       appliedTags: tags,
       autoArchiveDuration: 10080,
       reason: "RayCraft modmail opened by " + user.id
@@ -153,10 +144,10 @@ async function createTicket(client, config, store, user, category, details, cont
     const ticket = { ...initial, channelId: thread.id, starterMessageId: starter?.id || null };
     store.addTicket(ticket);
     if (starter) await starter.pin().catch(() => {});
-    const message = "Your **" + CHOICES[category] + "** ticket #" + number +
-      " has been opened. Reply in this DM to speak with staff. I'll react ✅ when a message reaches staff and ❌ if it fails.";
-    await user.send({ content: message, allowedMentions: NO_MENTIONS }).catch((error) =>
-      console.warn("Ticket created but user notification failed:", error.message));
+    if (contact) {
+      await user.send({ embeds: style.openedEmbeds(ticket), allowedMentions: NO_MENTIONS }).catch(error =>
+        console.warn("Staff-initiated ticket created but player notification failed:", error.message));
+    }
     return ticket;
   } finally {
     pending.delete(key);
@@ -176,10 +167,11 @@ async function draftInteraction(interaction, client, config, store) {
       return replyPrivate(interaction, "You already have a ticket. Reply to this bot here in DMs.");
     }
     const modal = new ModalBuilder().setCustomId("rct:details:" + arg)
-      .setTitle("RayCraft — " + CHOICES[arg])
+      .setTitle("RayCraft Modmail System")
       .addComponents(new ActionRowBuilder().addComponents(
         new TextInputBuilder().setCustomId("details").setLabel("Describe your issue")
           .setStyle(TextInputStyle.Paragraph).setMinLength(10).setMaxLength(1024).setRequired(true)
+          .setPlaceholder("Please explain why you're opening this ticket.")
       ));
     return interaction.showModal(modal);
   }
@@ -190,11 +182,10 @@ async function draftInteraction(interaction, client, config, store) {
     const nonce = Date.now().toString(36);
     drafts.set(interaction.user.id, { category: arg, details, nonce, time: Date.now() });
     return interaction.reply({
-      embeds: [new EmbedBuilder().setColor(0xe6a347).setTitle("Confirm RayCraft Ticket")
-        .addFields({ name: "Category", value: CHOICES[arg] }, { name: "Message", value: details })],
+      embeds: [style.confirmation(arg, details)],
       components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("rct:submit:" + nonce).setLabel("Confirm").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("rct:cancel:" + nonce).setLabel("Cancel").setStyle(ButtonStyle.Danger)
+        new ButtonBuilder().setCustomId("rct:submit:" + nonce).setLabel("Confirm").setEmoji("✔️").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("rct:cancel:" + nonce).setLabel("Cancel").setEmoji("✖️").setStyle(ButtonStyle.Danger)
       )]
     });
   }
@@ -215,7 +206,7 @@ async function draftInteraction(interaction, client, config, store) {
     try {
       const ticket = await createTicket(client, config, store, interaction.user, draft.category, draft.details);
       drafts.delete(interaction.user.id);
-      return interaction.editReply({ content: "Ticket #" + ticket.number + " opened! Continue by sending messages here.", embeds: [], components: [] });
+      return interaction.editReply({ content: "", embeds: style.openedEmbeds(ticket), components: [] });
     } catch (error) {
       console.error("Modmail create failed:", error);
       return interaction.editReply({ content: "Ticket could not be created: " + error.message, embeds: [], components: [] });
@@ -223,65 +214,93 @@ async function draftInteraction(interaction, client, config, store) {
   }
 }
 
-async function notifyOpener(client, ticket, message) {
+async function notifyOpener(client, ticket, message, kind = "green") {
   try {
     const user = await client.users.fetch(ticket.openerId);
-    await user.send({ content: message, allowedMentions: NO_MENTIONS });
+    const embed = style.notice(message, kind);
+    await user.send({ embeds: [embed], allowedMentions: NO_MENTIONS });
   } catch (error) {
     console.warn("Unable to DM ticket opener:", error.message);
   }
 }
 
 async function staffAction(interaction, client, config, store, action) {
+  // Acknowledge potentially slow moderator actions before remote requests.
+  if (["claim", "takeover", "unclaim", "remind"].includes(action)) {
+    await interaction.deferReply({ flags: ephemeral });
+  }
+  if (action === "closeconfirm") await interaction.deferUpdate();
+
   const actor = await requireStaff(interaction, config, "helper");
   if (!actor) return;
   const ticket = store.ticketByChannel(interaction.channelId);
   if (!ticket || interaction.channel.parentId !== config.ticketForumId) {
-    return replyPrivate(interaction, "Use this action inside an active RayCraft ticket forum thread.");
+    return replyPrivate(interaction, "This command must be used inside an active RayCraft ticket.");
   }
   if (ticket.category === "appeal" && !authorized(actor, interaction.guild, config, "moderator")) {
-    return replyPrivate(interaction, "Appeal decisions require a Moderator.");
+    return replyPrivate(interaction, "Only Moderators may handle appeal tickets.");
   }
 
   if (action === "close") {
     return interaction.reply({
-      content: "Close this ticket? The conversation will be retained in the archived forum thread.",
+      embeds: [style.notice("Are you sure you want to close this ticket? The conversation will be retained in the archived forum thread.", "red", "Close Ticket?")],
       flags: ephemeral,
       components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("rct:closeconfirm").setLabel("Confirm close").setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId("rct:closecancel").setLabel("Cancel").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId("rct:closeconfirm").setLabel("Confirm").setEmoji("✔️").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("rct:closecancel").setLabel("Cancel").setEmoji("✖️").setStyle(ButtonStyle.Danger)
       )]
     });
   }
   if (action === "closecancel") {
-    return interaction.update({ content: "Closure cancelled.", components: [] });
+    return interaction.update({ content: "Ticket closure cancelled.", embeds: [], components: [] });
   }
   if (action === "closeconfirm") {
-    await interaction.deferUpdate();
+    // Mark closed before archiving to prevent any further DM relay.
     store.changeTicket(ticket.channelId, { status: "closed", closedAt: new Date().toISOString(), closedBy: actor.id });
-    await interaction.channel.send({ content: "Ticket closed by <@" + actor.id + ">.", allowedMentions: NO_MENTIONS });
-    await updateTicketPost(client, { ...ticket, status: "closed" }).catch(() => {});
-    await notifyOpener(client, ticket, "Your RayCraft ticket #" + ticket.number + " has been closed.");
+    await interaction.channel.send({
+      embeds: [style.notice("This thread has been closed by <@" + actor.id + ">.", "red", "Ticket Closed")],
+      allowedMentions: NO_MENTIONS
+    });
+    await updateTicketPost(client, { ...ticket, status: "closed" }).catch(error =>
+      console.warn("Could not update closed ticket starter:", error.message));
+    await notifyOpener(client, ticket, "Your **" + style.categoryName(ticket.category) + "** ticket **#" + ticket.number + "** has been closed.", "red");
     await interaction.channel.setArchived(true);
-    await audit(interaction, config, "Ticket #" + ticket.number + " closed by <@" + actor.id + ">.");
-    return interaction.editReply({ content: "Ticket closed and archived.", components: [] });
+    return interaction.editReply({ content: "Ticket closed and archived.", embeds: [], components: [] });
   }
+
   if (action === "claim" || action === "takeover") {
-    if (ticket.claimedBy && action !== "takeover") return replyPrivate(interaction, "This ticket is already claimed. Moderators can take over when necessary.");
+    if (ticket.claimedBy && action === "claim") return replyPrivate(interaction, "Ticket already claimed. A Moderator may take it over.");
     if (action === "takeover" && !authorized(actor, interaction.guild, config, "moderator")) {
-      return replyPrivate(interaction, "Only Moderators can take over claimed tickets.");
+      return replyPrivate(interaction, "Only Moderators may override a claimed ticket.");
     }
-    const changes = {
+    if (action === "takeover" && !ticket.claimedBy) return replyPrivate(interaction, "This ticket is unclaimed; use Claim Ticket.");
+    if (action === "claim" && ticket.claimedBy === actor.id) return replyPrivate(interaction, "You have already claimed this ticket.");
+    const updated = store.changeTicket(ticket.channelId, {
       claimedBy: actor.id, pingOptIn: false, lastClaimedAt: new Date().toISOString(),
       claimReminderCount: 0, lastClaimReminderAt: null
-    };
-    const updated = store.changeTicket(ticket.channelId, changes);
+    });
     await updateTicketPost(client, updated);
-    await notifyOpener(client, ticket, "Your ticket #" + ticket.number + " has been claimed and is under review.");
-    await audit(interaction, config, "Ticket #" + ticket.number + " claimed by <@" + actor.id + ">.");
-    return replyPrivate(interaction, "Claimed ticket #" + ticket.number + ". Use Ping settings to opt in to follow-up mentions.");
+    await interaction.channel.send({
+      embeds: [style.notice(
+        "This ticket has been " + (action === "takeover" ? "taken over" : "claimed") + " by <@" + actor.id + ">.",
+        action === "takeover" ? "yellow" : "green"
+      )],
+      allowedMentions: NO_MENTIONS
+    });
+    await notifyOpener(client, ticket,
+      "Your ticket has been " + (action === "takeover" ? "reassigned to another staff member" : "claimed and is now being reviewed") + ".", 
+      action === "takeover" ? "yellow" : "green");
+    return replyPrivate(interaction, {
+      embeds: [style.notice("You've claimed ticket **#" + ticket.number + "**. Configure whether RayBot should ping you when the player replies.", "green", "Ticket Claimed")],
+      components: [new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("rct:pingon").setLabel("Enable pings").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("rct:pingoff").setLabel("No pings").setStyle(ButtonStyle.Secondary)
+      )]
+    });
   }
+
   if (action === "unclaim") {
+    if (!ticket.claimedBy) return replyPrivate(interaction, "This ticket is already unclaimed.");
     if (ticket.claimedBy !== actor.id && !authorized(actor, interaction.guild, config, "moderator")) {
       return replyPrivate(interaction, "Only the claimant or a Moderator may unclaim this ticket.");
     }
@@ -290,29 +309,42 @@ async function staffAction(interaction, client, config, store, action) {
       claimReminderCount: 0, lastClaimReminderAt: null, lastUnclaimedReminderAt: new Date().toISOString()
     });
     await updateTicketPost(client, updated);
-    await notifyOpener(client, ticket, "Ticket #" + ticket.number + " is awaiting another staff member.");
-    return replyPrivate(interaction, "Ticket unclaimed.");
+    const roles = style.pingRoles(updated, config);
+    await interaction.channel.send({
+      content: roles.map(id => "<@&" + id + ">").join(" "),
+      embeds: [style.notice("Ticket unclaimed by <@" + actor.id + ">. This request is awaiting a new staff member.", "red", "Ticket Available")],
+      allowedMentions: { parse: [], roles }
+    });
+    await notifyOpener(client, ticket, "Your ticket has been unclaimed and is awaiting another staff member.", "red");
+    return replyPrivate(interaction, { embeds: [style.notice("Ticket returned to the staff queue.", "green")] });
   }
-  if (action === "ping" || action === "pingon" || action === "pingoff") {
-    if (ticket.claimedBy !== actor.id) return replyPrivate(interaction, "Only the current claimant controls ticket pings.");
+
+  if (["ping", "pingon", "pingoff"].includes(action)) {
+    if (ticket.claimedBy !== actor.id) return replyPrivate(interaction, "Only the current claimant may change their ticket ping preferences.");
     if (action === "ping") {
       return interaction.reply({
-        content: "Notify you when the player replies? Current setting: **" + (ticket.pingOptIn ? "ON" : "OFF") + "**.",
+        embeds: [style.notice(
+          "**Claimed by:** <@" + actor.id + ">\n**Pings:** " + (ticket.pingOptIn ? "Enabled" : "Disabled") +
+          "\n\nWhen enabled, RayBot will mention you when the player sends a message after staff spoke last, or after they've waited at least five minutes between messages.",
+          ticket.pingOptIn ? "green" : "gray", "Ticket Ping Settings")],
         flags: ephemeral,
         components: [new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId("rct:pingon").setLabel("Enable pings").setStyle(ButtonStyle.Success),
-          new ButtonBuilder().setCustomId("rct:pingoff").setLabel("Disable pings").setStyle(ButtonStyle.Secondary)
+          new ButtonBuilder().setCustomId("rct:pingon").setLabel("Enable pings").setStyle(ButtonStyle.Success).setDisabled(!!ticket.pingOptIn),
+          new ButtonBuilder().setCustomId("rct:pingoff").setLabel("No pings").setStyle(ButtonStyle.Secondary).setDisabled(!ticket.pingOptIn)
         )]
       });
     }
-    store.changeTicket(ticket.channelId, { pingOptIn: action === "pingon" });
-    if (interaction.isButton()) return interaction.update({ content: "Ticket pings " + (action === "pingon" ? "enabled" : "disabled") + ".", components: [] });
-    return replyPrivate(interaction, "Ticket ping settings updated.");
+    const enabled = action === "pingon";
+    store.changeTicket(ticket.channelId, { pingOptIn: enabled });
+    const payload = { embeds: [style.notice("Ticket claimant pings are now **" + (enabled ? "enabled" : "disabled") + "**.", enabled ? "green" : "gray")], components: [] };
+    if (interaction.isButton()) return interaction.update(payload);
+    return replyPrivate(interaction, payload);
   }
+
   if (action === "remind") {
     const reminders = require("./ticketReminders");
     await reminders.remind(client, config, store, ticket, true);
-    return replyPrivate(interaction, "Ticket reminder check triggered.");
+    return replyPrivate(interaction, { embeds: [style.notice("Ticket reminder check triggered.", "yellow")] });
   }
 }
 
@@ -326,7 +358,6 @@ async function command(interaction, client, config, store) {
     if (sub === "blacklist" || sub === "unblacklist") {
       const blocked = sub === "blacklist";
       store.setBlacklisted(config.guildId, user.id, blocked);
-      await audit(interaction, config, "Modmail " + (blocked ? "blacklist" : "unblacklist") + " by <@" + actor.id + "> for <@" + user.id + ">.");
       return replyPrivate(interaction, "Modmail for " + user.username + " is now " + (blocked ? "blocked" : "allowed") + ".");
     }
     if (store.openTicket(config.guildId, user.id)) {
@@ -335,13 +366,12 @@ async function command(interaction, client, config, store) {
     const reason = interaction.options.getString("reason", true);
     await interaction.deferReply({ flags: ephemeral });
     try {
-      await user.send({ content: "RayCraft staff would like to contact you: " + reason + "\nPlease reply here to communicate through modmail.", allowedMentions: NO_MENTIONS });
+      await user.send({ embeds: [style.notice("RayCraft staff have opened a modmail conversation with you.\n\n**Reason:** " + reason + "\n\nReply here to communicate privately with staff.", "yellow", "RayCraft Staff Contact")], allowedMentions: NO_MENTIONS });
     } catch (error) {
       return interaction.editReply("Could not DM that player, so no ticket was opened.");
     }
     try {
       const ticket = await createTicket(client, config, store, user, "other", reason, true);
-      await audit(interaction, config, "Staff-initiated ticket #" + ticket.number + " opened by <@" + actor.id + "> for <@" + user.id + ">.");
       return interaction.editReply("Staff-initiated ticket opened: <#" + ticket.channelId + ">.");
     } catch (error) {
       console.error("Failed to initiate staff modmail ticket:", error);

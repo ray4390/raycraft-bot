@@ -8,7 +8,7 @@ const { commands } = require("./commands");
 const { handleInteraction } = require("./handlers");
 const { handleMessage } = require("./ticketRelay");
 const { sweep } = require("./ticketReminders");
-const { forumFor } = require("./tickets");
+const { forumFor, updateTicketPost } = require("./tickets");
 const { logEvent } = require("./utilities");
 const ticketPanel = require("./ticketPanel");
 const { startPresence } = require("./presence");
@@ -37,8 +37,19 @@ client.once(Events.ClientReady, async () => {
     logEvent("ready", "connected to discord");
     startPresence(client);
     ticketPanel.ensure(client, config, store).catch((error) => {
-      console.error("Could not post the Open a Ticket panel:", error);
+      console.error("Could not refresh the Open a Ticket panel:", error);
     });
+    // Retouch existing active forum starters with the new RayCraft modmail
+    // embeds; do not create duplicate threads, send notices, or ping staff.
+    (async () => {
+      for (const ticket of store.activeTickets(config.guildId)) {
+        try {
+          await updateTicketPost(client, ticket);
+        } catch (error) {
+          console.warn("Couldn't refresh ticket #" + ticket.number + ":", error.message);
+        }
+      }
+    })().catch((error) => console.warn("Ticket presentation refresh failed:", error));
     // PoliBot's reminder cadence: check every 15 minutes.
     const ticketTimer = setInterval(() => {
       sweep(client, config, store).catch((error) => console.error("Ticket reminder sweep failed:", error));

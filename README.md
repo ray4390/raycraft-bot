@@ -69,3 +69,13 @@ On startup, RayBot checks Discord channel `1561444742812794940` for its Open a T
 ## Rules and custom presence
 
 `config/rules.json` now contains the eight approved RayCraft rules verbatim; `/rules` and rule reminders use those texts. RayBot rotates **Custom** activities only, every 45 minutes, beginning at startup. Status messages are in `src/presence.js`; no Playing, Watching, or Listening activities are used.
+
+## Modmail presentation and staff notifications
+
+RayBot uses a PoliBot-style ticket experience adapted for RayCraft: **yellow category DM**, modal reason form, **yellow ticket confirmation**, **green opened-ticket confirmation and instructions**, **green forum starter card**, color-coded claim/unclaim/close notices, claimant ping preferences, and **blue two-way message embeds** with delivery reactions. New player tickets mention **Moderators** for appeals, and **Moderators + Helpers** for other categories, in the forum starter post and in unclaimed reminder posts.
+
+**Ticket events are not copied into the staff logs channel.** The ticket forum thread and the player's DMs are the record of ticket activity. Ordinary non-ticket moderation audits remain unaffected.
+
+For role notifications to reach staff, RayBot must be permitted to mention the configured roles in the ticket forum. If they are not mentionable, give RayBot the appropriate role-mention permission for that forum instead of making all roles publicly mentionable.
+
+The **Open a Ticket** button acknowledges the interaction immediately before checking permissions or sending DMs, avoiding Discord's misleading "did not respond" failure. The existing ticket panel will be refreshed when RayBot starts; no additional setup command is required.

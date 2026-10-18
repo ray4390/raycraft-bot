@@ -1,10 +1,9 @@
 "use strict";
-const { EmbedBuilder } = require("discord.js");
 const tickets = require("./tickets");
+const style = require("./ticketStyle");
 
 const TWO_HOURS = 2 * 60 * 60 * 1000;
 const TWELVE_HOURS = 12 * 60 * 60 * 1000;
-const NO_MENTIONS = { parse: [] };
 
 function elapsed(now, iso) {
   const time = Date.parse(iso || "");
@@ -20,10 +19,11 @@ async function remind(client, config, store, ticket, force = false) {
   if (!ticket.claimedBy) {
     const last = ticket.lastUnclaimedReminderAt || ticket.createdAt;
     if (!force && elapsed(now, last) < TWO_HOURS) return false;
+    const roles = style.pingRoles(ticket, config);
     await thread.send({
-      embeds: [new EmbedBuilder().setColor(0xf4ba50).setTitle("Ticket awaiting claim")
-        .setDescription("A player ticket is still unclaimed. Helpers or Moderators, please review this request.")],
-      allowedMentions: NO_MENTIONS
+      content: roles.map(id => "<@&" + id + ">").join(" "),
+      embeds: [style.notice("This ticket is still unclaimed. Please claim it and respond to the player.", "yellow", "Ticket Awaiting Claim")],
+      allowedMentions: { parse: [], roles }
     });
     store.changeTicket(ticket.channelId, {
       lastUnclaimedReminderAt: new Date(now).toISOString(),
@@ -48,18 +48,18 @@ async function remind(client, config, store, ticket, force = false) {
       lastUnclaimedReminderAt: new Date(now).toISOString()
     });
     await tickets.updateTicketPost(client, updated);
+    const roles = style.pingRoles(updated, config);
     await thread.send({
-      embeds: [new EmbedBuilder().setColor(0xce6f51).setTitle("Ticket unclaimed")
-        .setDescription("The claimant did not respond after two reminders. This ticket is now available for another staff member.")],
-      allowedMentions: NO_MENTIONS
+      content: roles.map(id => "<@&" + id + ">").join(" "),
+      embeds: [style.notice("The claimant did not respond after two reminders. This ticket is available for another staff member.", "red", "Ticket Unclaimed")],
+      allowedMentions: { parse: [], roles }
     });
     await tickets.notifyOpener(client, ticket, "Your RayCraft ticket #" + ticket.number + " was returned to the staff queue due to inactivity.");
     return true;
   }
   await thread.send({
     content: "<@" + ticket.claimedBy + ">",
-    embeds: [new EmbedBuilder().setColor(0xdb9656).setTitle("Ticket response needed")
-      .setDescription("You claimed this ticket but haven't responded. Please reply or unclaim it. Reminder " + count + " of 2.")],
+    embeds: [style.notice("You claimed this ticket but haven't responded. Please reply or unclaim it. Reminder " + count + " of 2.", "yellow", "Ticket Response Needed")],
     allowedMentions: { parse: [], users: [ticket.claimedBy] }
   });
   store.changeTicket(ticket.channelId, {
