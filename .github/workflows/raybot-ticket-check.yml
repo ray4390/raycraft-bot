@@ -1,0 +1,25 @@
+name: RayBot ticket regression checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/raybot-ticket-check.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ticket-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          set -euo pipefail
+          for src in src/*.js test/*.js; do node --check "$src"; done
+          node --test test/*.test.js
