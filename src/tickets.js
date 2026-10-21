@@ -279,7 +279,8 @@ async function staffAction(interaction, client, config, store, action) {
       claimedBy: actor.id, pingOptIn: false, lastClaimedAt: new Date().toISOString(),
       claimReminderCount: 0, lastClaimReminderAt: null
     });
-    await updateTicketPost(client, updated);
+    await updateTicketPost(client, updated).catch(error =>
+      console.warn("Could not refresh claimed ticket controls (claim is saved):", error));
     await interaction.channel.send({
       embeds: [style.notice(
         "This ticket has been " + (action === "takeover" ? "taken over" : "claimed") + " by <@" + actor.id + ">.",
@@ -308,7 +309,8 @@ async function staffAction(interaction, client, config, store, action) {
       claimedBy: null, pingOptIn: false, lastClaimedAt: null,
       claimReminderCount: 0, lastClaimReminderAt: null, lastUnclaimedReminderAt: new Date().toISOString()
     });
-    await updateTicketPost(client, updated);
+    await updateTicketPost(client, updated).catch(error =>
+      console.warn("Could not refresh unclaimed ticket controls (state is saved):", error));
     const roles = style.pingRoles(updated, config);
     await interaction.channel.send({
       content: roles.map(id => "<@&" + id + ">").join(" "),
