@@ -2,6 +2,7 @@
 const { authorized } = require("./policy");
 const tickets = require("./tickets");
 const style = require("./ticketStyle");
+const { sendRelay } = require("./ticketMedia");
 
 const NO_MENTIONS = { parse: [] };
 const PROMPTS = new Map();
@@ -56,13 +57,10 @@ async function dmMessage(message, client, config, store) {
     const now = Date.now();
     const ping = userPing(ticket, now);
     const embed = style.incomingEmbed(message);
-    const files = [...message.attachments.values()].map((a) => a.url).slice(0, 10);
-    await thread.send({
+    await sendRelay(thread, embed, message, {
       content: ping ? "<@" + ticket.claimedBy + ">" : undefined,
-      embeds: [embed],
       allowedMentions: ping ? { parse: [], users: [ticket.claimedBy] } : NO_MENTIONS
     });
-    for (const url of files) await thread.send({ content: url, allowedMentions: NO_MENTIONS });
     store.changeTicket(ticket.channelId, {
       lastSpeaker: "user", lastUserMessageAt: new Date(now).toISOString()
     });
@@ -87,15 +85,11 @@ async function staffMessage(message, client, config, store) {
   }
   // Deliberate staff-only notes, unlike ordinary thread replies, are never relayed.
   if (message.content?.startsWith("//")) return;
-  const attachmentUrls = [...message.attachments.values()].map((attachment) => attachment.url).slice(0, 10);
   let user;
   try {
     user = await client.users.fetch(ticket.openerId);
     const embed = style.outgoingEmbed(message, ticket);
-    await user.send({ embeds: [embed], allowedMentions: NO_MENTIONS });
-    for (const url of attachmentUrls) {
-      await user.send({ content: url, allowedMentions: NO_MENTIONS });
-    }
+    await sendRelay(user, embed, message);
     const now = new Date().toISOString();
     const changes = {
       lastSpeaker: "staff", lastStaffMessageAt: now,
@@ -106,8 +100,9 @@ async function staffMessage(message, client, config, store) {
       changes.lastClaimedAt = now;
       changes.pingOptIn = false;
     }
+    const wasUnclaimed = !ticket.claimedBy;
     const updated = store.changeTicket(ticket.channelId, changes);
-    if (!ticket.claimedBy) {
+    if (wasUnclaimed) {
       await tickets.updateTicketPost(client, updated).catch(error => console.warn("Could not update automatically claimed ticket:", error.message));
       await tickets.notifyOpener(client, ticket, "Your ticket has been claimed and is now being reviewed.");
     }
