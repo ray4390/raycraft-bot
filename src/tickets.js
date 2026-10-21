@@ -279,6 +279,16 @@ async function staffAction(interaction, client, config, store, action) {
       claimedBy: actor.id, pingOptIn: false, lastClaimedAt: new Date().toISOString(),
       claimReminderCount: 0, lastClaimReminderAt: null
     });
+    // Confirm the persisted claim immediately. Slow Discord post edits, forum
+    // messages or player DMs must not make the staff button appear to fail.
+    await replyPrivate(interaction, {
+      embeds: [style.notice("You've " + (action === "takeover" ? "taken over" : "claimed") +
+        " ticket **#" + ticket.number + "**. Configure whether RayBot should ping you when the player replies.", "green", "Ticket Claimed")],
+      components: [new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("rct:pingon").setLabel("Enable pings").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("rct:pingoff").setLabel("No pings").setStyle(ButtonStyle.Secondary)
+      )]
+    });
     await updateTicketPost(client, updated).catch(error =>
       console.warn("Could not refresh claimed ticket controls (claim is saved):", error));
     await interaction.channel.send({
@@ -287,17 +297,11 @@ async function staffAction(interaction, client, config, store, action) {
         action === "takeover" ? "yellow" : "green"
       )],
       allowedMentions: NO_MENTIONS
-    });
+    }).catch(error => console.warn("Could not post ticket claim notice:", error));
     await notifyOpener(client, ticket,
-      "Your ticket has been " + (action === "takeover" ? "reassigned to another staff member" : "claimed and is now being reviewed") + ".", 
+      "Your ticket has been " + (action === "takeover" ? "reassigned to another staff member" : "claimed and is now being reviewed") + ".",
       action === "takeover" ? "yellow" : "green");
-    return replyPrivate(interaction, {
-      embeds: [style.notice("You've claimed ticket **#" + ticket.number + "**. Configure whether RayBot should ping you when the player replies.", "green", "Ticket Claimed")],
-      components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("rct:pingon").setLabel("Enable pings").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("rct:pingoff").setLabel("No pings").setStyle(ButtonStyle.Secondary)
-      )]
-    });
+    return;
   }
 
   if (action === "unclaim") {
@@ -309,6 +313,7 @@ async function staffAction(interaction, client, config, store, action) {
       claimedBy: null, pingOptIn: false, lastClaimedAt: null,
       claimReminderCount: 0, lastClaimReminderAt: null, lastUnclaimedReminderAt: new Date().toISOString()
     });
+    await replyPrivate(interaction, { embeds: [style.notice("Ticket returned to the staff queue.", "green")] });
     await updateTicketPost(client, updated).catch(error =>
       console.warn("Could not refresh unclaimed ticket controls (state is saved):", error));
     const roles = style.pingRoles(updated, config);
@@ -316,9 +321,9 @@ async function staffAction(interaction, client, config, store, action) {
       content: roles.map(id => "<@&" + id + ">").join(" "),
       embeds: [style.notice("Ticket unclaimed by <@" + actor.id + ">. This request is awaiting a new staff member.", "red", "Ticket Available")],
       allowedMentions: { parse: [], roles }
-    });
+    }).catch(error => console.warn("Could not post unclaimed ticket notice:", error));
     await notifyOpener(client, ticket, "Your ticket has been unclaimed and is awaiting another staff member.", "red");
-    return replyPrivate(interaction, { embeds: [style.notice("Ticket returned to the staff queue.", "green")] });
+    return;
   }
 
   if (["ping", "pingon", "pingoff"].includes(action)) {
