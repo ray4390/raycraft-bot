@@ -42,6 +42,9 @@ function readConfig(env = process.env) {
     serverStatusChannelId: env.SERVER_STATUS_CHANNEL_ID || "1548434412906094754",
     ticketForumId: env.TICKET_FORUM_ID || "",
     ticketPanelChannelId: env.TICKET_PANEL_CHANNEL_ID || "1561444742812794940",
+    suggestionForumId: env.SUGGESTION_FORUM_ID || "1566922019025588245",
+    suggestionReviewChannelId: env.SUGGESTION_REVIEW_CHANNEL_ID || "1566922399184855041",
+    suggestionPollsChannelId: env.SUGGESTION_POLLS_CHANNEL_ID || "1548865060313759875",
     expectedBotId: env.BOT_APPLICATION_ID || "",
     dataFile: env.DATA_FILE || "./data/raycraft.json"
   };
