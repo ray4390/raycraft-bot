@@ -62,67 +62,79 @@ No Minecraft server management, RCON, or shell execution is included. Runtime ca
 
 Updates to JavaScript and environment settings still require `git pull --ff-only && pm2 restart raycraft-bot`. There is no automated test workflow.
 
-## Suggestions: forum feedback and optional polls
+## Suggestions: moderator approval, member reactions and optional polls
 
-RayBot monitors new forum posts in **#suggestions** (ID `1566922019025588245`).
-Anyone permitted to post there can create a suggestion directly using Discord's
-regular forum **New Post** UI; no bot-owned submission form is required. Players can run
-`/suggest` to find the forum and read instructions.
+**Players:** Run `/suggest` in RayCraft Discord (optional `category` choice: Gameplay,
+Economy, Plugins, Building, Community or Quality of Life). RayBot opens a
+form for the title, proposal and explanation. The submission is **private**
+until a moderator approves it. Only one pending proposal per player is
+permitted at a time. Players receive an ephemeral submission confirmation
+and a DM when their idea is accepted or rejected (if DMs are available).
 
-The server administrator selects the forum's **default reaction emoji** in Discord's
-channel settings. RayBot does not set, remove, count, or add reactions; users support a
-proposal by clicking the native forum reaction. Reaction totals are advisory and can be
-inspected in the forum post. Replies stay in the same discussion thread.
+**Moderators:** RayBot sends the complete proposal to the private
+`#suggestion-processing` channel (`1566922399184855041`), showing the
+player's display name and avatar. Moderators select **Approve & Publish**
+or **Reject** (rejection requires a reason). Rejections are private and
+produce no public forum thread. Approvals publish the original proposal
+to the public `#suggestions` forum (`1566922019025588245`).
 
-For each **new** forum post, RayBot creates exactly one review card in the
-**moderator-only #suggestion-processing** text channel
-(`1566922399184855041`). The card links to the original post and provides:
+Approved posts use a forum **webhook** with the player's display name and
+avatar when RayBot has Manage Webhooks permission. They are explicitly
+credited as *submitted via RayBot / approved by moderators*, so they cannot
+be confused with a direct Discord post by the player. If Manage Webhooks
+is unavailable, RayBot falls back to a bot-owned forum post with the
+player's identity displayed in the embed. At no point does RayBot claim
+that a webhook message was actually sent from the player's account.
 
-- **Review**: mark Under Review, announcing the status in the public forum.
-- **Plan**: mark Planned, with a public status update.
-- **Decline**: require a reason, then publish that reason in the suggestion.
-- **Implemented**: mark the request as implemented.
-- **Create Poll**: open a modal to set a question and two answer choices;
-  RayBot publishes a **seven-day native Discord poll** in #polls
-  (`1548865060313759875`) and links it from the original suggestion and
-  the private review card. The poll is advisory and requires a later
-  moderator decision; poll results do **not** automatically change server rules.
+Forum members click the forum's configured **default reaction emoji** to
+endorse ideas; there are no per-suggestion vote buttons. The emoji is
+chosen by the server administrator; RayBot does not replace it.
 
-Moderators must have the configured `MODERATOR_ROLE_IDS` role, server ownership,
-or Discord Administrator permissions to use these controls. Helpers alone cannot.
-Closed suggestions (Declined/Implemented) cannot be re-decided through old
-buttons, and a suggestion can receive only one formal poll. State survives bot
-restarts in the existing `DATA_FILE` JSON, alongside modmail and moderation data.
+Once approved, a moderator can mark the public proposal **Under Review**,
+**Planned**, **Declined** (with a reason), or **Implemented**. There is an
+optional **Create Poll** button that publishes a seven-day, two-answer
+native Discord poll in `#polls` (`1548865060313759875`). Polls
+are advisory and do not automatically alter the suggestion's status.
 
-### Setup and recovery
+### Forum tags (RayBot-managed)
 
-`SUGGESTION_FORUM_ID`, `SUGGESTION_REVIEW_CHANNEL_ID`, and
-`SUGGESTION_POLLS_CHANNEL_ID` default to the three IDs above. They can be overridden
-via `.env`. Keep the processing channel **private to moderators**; @everyone
-must be denied View Channel. RayBot needs View Channel, Send Messages,
-Read Message History, and Embed Links in processing; View Channel and
-Send Messages in the suggestion forum; and View Channel, Send Messages,
-and **Send Polls** in #polls. The bot refuses to post to a review
-channel that is visible to @everyone. Give RayBot access to the forum
-threads so it receives thread-create events.
+RayBot creates missing tags on startup and when approving, without
+removing/renaming manually-created tags:
 
-`/suggestsync post:<thread channel ID>` is moderator-only and repairs missing
-or deleted review cards, including for posts created while RayBot was offline.
-It never duplicates a review card that is still present. When the bot
-comes online, new posts are processed automatically; older forum posts
-are not bulk-imported. This prevents old suggestions from flooding staff.
+- Categories: **Gameplay**, **Economy**, **Plugins**, **Building**,
+  **Community**, **Quality of Life**.
+- Statuses: **Open**, **Under Review**, **Poll Open**, **Planned**,
+  **Declined**, **Implemented**.
 
-Native forum reactions are deliberately *not* treated as a binding referendum.
-Moderators retain decision authority and should explain declined proposals.
-The poll action never pings everyone or overrides forum permissions.
+Each approved post receives its category plus one current status tag.
+Changes replace only bot-managed status tags and preserve unrelated tags,
+up to Discord's maximum of five applied tags per post. If the channel
+has too many other tags to add the defaults, or the bot lacks Manage
+Channels, it logs a configuration error instead of deleting user tags.
 
-### RayBot-only deployment
+RayBot also sets the `@everyone` forum overwrite to **deny Create Posts**
+while allowing replies and reactions, so member submissions flow through
+`/suggest` before publication. Review other role-specific overrides
+to ensure no member role re-grants Create Posts. RayBot does not touch
+other role-specific permission overwrites.
 
-After reviewing and merging the change, update the **RayBot process only**:
+### Permissions, storage and recovery
 
-`cd /home/ray/raycraft-bot && git pull --ff-only && npm install --omit=dev && node --check src/suggestions.js && node --test test/suggestionPolicy.test.js && pm2 restart raycraft-bot --update-env && pm2 logs raycraft-bot --lines 40 --nostream`
+The processing channel must not be visible to `@everyone`; moderators
+must be able to view it. RayBot requires View Channel, Send Messages,
+Read Message History and Embed Links there. In the public forum, RayBot
+requires View Channel, Manage Channels (for tags/permission setup), Create
+Posts, Send Messages in Threads, Manage Threads (to update statuses)
+and ideally **Manage Webhooks** (for the player-style appearance).
+For formal polls it requires **Send Polls** in `#polls`.
 
-This does not restart Paper, RayCraft worlds, or unrelated PM2 bots.
+Pending and published proposals, decisions, poll IDs, review card IDs
+and author identity are stored in the existing private `DATA_FILE`
+JSON. The existing modmail and moderation data are preserved. Moderator
+command `/suggestsync number:<id>` refreshes or recovers a missing
+processing card. All mod actions are permission checked. Only RayBot is
+restarted when deploying; Minecraft and the other Discord bots are untouched.
+
 
 ## Ticket opening panel
 
