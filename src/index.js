@@ -13,6 +13,7 @@ const { logEvent } = require("./utilities");
 const ticketPanel = require("./ticketPanel");
 const { startPresence } = require("./presence");
 const statusPanel = require("./serverStatusPanel");
+const suggestions = require("./suggestions");
 
 const config = readConfig();
 validateConfig(config);
@@ -33,6 +34,7 @@ client.once(Events.ClientReady, async () => {
       throw new Error("Logged into wrong Discord bot application. Check BOT_APPLICATION_ID");
     }
     await forumFor(client, config);
+    await suggestions.verify(client, config).catch((error) => console.error("Suggestion system configuration:", error.message));
     await guild.commands.set(commands.map((command) => command.toJSON()));
     console.log("RayCraft Bot online as " + client.user.tag + "; commands registered for " + guild.id);
     logEvent("ready", "connected to discord");
@@ -72,6 +74,15 @@ client.on(Events.MessageCreate, async (message) => {
     await handleMessage(message, client, config, store);
   } catch (error) {
     console.error("RayCraft modmail message relay failed:", error);
+  }
+});
+
+client.on(Events.ThreadCreate, async (thread, newlyCreated) => {
+  if (!newlyCreated) return;
+  try {
+    await suggestions.intake(thread, client, config, store);
+  } catch (error) {
+    console.error("RayBot suggestion intake failed for " + thread.id + ":", error);
   }
 });
 

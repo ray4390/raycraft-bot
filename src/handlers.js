@@ -6,6 +6,7 @@ const moderation = require("./moderation");
 const tickets = require("./tickets");
 const utilities = require("./utilities");
 const ticketPanel = require("./ticketPanel");
+const suggestions = require("./suggestions");
 
 async function handleInteraction(interaction, client, config, store) {
   // DM ticket category buttons and modals are allowed outside a guild, but all staff
@@ -36,6 +37,9 @@ async function handleInteraction(interaction, client, config, store) {
       interaction.customId?.startsWith("rutil:")) {
     return utilities.component(interaction, client, config);
   }
+  if ((interaction.isButton() || interaction.isModalSubmit()) && interaction.customId?.startsWith("rcs:")) {
+    return suggestions.component(interaction, client, config, store);
+  }
   if (!interaction.isChatInputCommand()) return;
   const command = interaction.commandName;
 
@@ -52,6 +56,7 @@ async function handleInteraction(interaction, client, config, store) {
   if (command === "ticket") return tickets.command(interaction, client, config, store);
   if (command === "openticket") return tickets.begin(interaction, client, config, store);
   if (command === "ticketpanel") return ticketPanel.command(interaction, client, config, store);
+  if (command === "suggest" || command === "suggestsync") return suggestions.command(interaction, client, config, store);
 
   if (command === "rules") {
     const body = rules.map((rule, index) => "**" + (index + 1) + ". " + rule.title + "**\n" + rule.summary).join("\n\n");
