@@ -30,7 +30,7 @@ const groups = [
   { id: "general", label: "General", entries: [
     ["/ping", "Gateway and API latency"], ["/serverstatus", "Minecraft Java and Bedrock status"], ["/help", "Command directory"],
     ["/about", "Bot version and uptime"], ["/rules", "Community rules"],
-    ["/connect", "How to join RayCraft"], ["/openticket", "Open a private modmail ticket"]
+    ["/connect", "How to join RayCraft"], ["/suggest", "Submit and support forum suggestions"], ["/openticket", "Open a private modmail ticket"]
   ]},
   { id: "helper", label: "Helpers", entries: [
     ["/rulereminder", "Friendly rule reminder"], ["Rules Reminder (message action)", "Target a message"],
@@ -41,7 +41,8 @@ const groups = [
   { id: "moderator", label: "Moderators", entries: [
     ["/warn / timeout / kick / ban", "Moderation actions"], ["/purge", "Delete recent messages"],
     ["/ticket takeover / contact", "Manage escalations"],
-    ["/ticket blacklist / unblacklist", "Control modmail submissions"]
+    ["/ticket blacklist / unblacklist", "Control modmail submissions"],
+    ["/suggestsync", "Repair a missing suggestion review card"]
   ]},
   { id: "admin", label: "Administrators", entries: [
     ["/reload", "Reload RayCraft rules and sync slash commands"],
