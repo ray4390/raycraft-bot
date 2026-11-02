@@ -83,24 +83,24 @@ async function channels(client, config) {
       queue?.type !== ChannelType.GuildText) {
     throw new Error("Suggestion forum or private review channel has the wrong Discord channel type.");
   }
-  // Fail closed if non-moderator roles can see the processing queue.
-  // Administrator roles are allowed because Discord already grants them server-wide access.
+  // Honor existing explicitly permitted roles (including the owner's personal
+  // role) while refusing a public queue. Role visibility is administered in Discord.
   await guild.roles.fetch();
   if (queue.permissionsFor(guild.roles.everyone)?.has(PermissionFlagsBits.ViewChannel)) {
     throw new Error("Suggestion processing channel is visible to @everyone; refusing to post private review cards.");
-  }
-  for (const role of guild.roles.cache.values()) {
-    if (role.id === guild.roles.everyone.id ||
-        config.moderatorRoles.includes(role.id) ||
-        role.permissions.has(PermissionFlagsBits.Administrator)) continue;
-    if (queue.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) {
-      throw new Error("Non-moderator role " + role.name + " can view the suggestion-processing channel.");
-    }
   }
   for (const roleId of config.moderatorRoles) {
     const role = guild.roles.cache.get(roleId);
     if (!role || !queue.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) {
       throw new Error("Configured moderator role cannot view the suggestion-processing channel: " + roleId);
+    }
+  }
+  for (const roleId of config.helperRoles) {
+    const role = guild.roles.cache.get(roleId);
+    if (role && queue.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel) &&
+        !config.moderatorRoles.includes(roleId)) {
+      console.warn("RayBot suggestions: helper role " + roleId +
+        " can view the processing channel; consider restricting it to moderators and owner.");
     }
   }
   const me = await guild.members.fetchMe();
