@@ -62,6 +62,68 @@ No Minecraft server management, RCON, or shell execution is included. Runtime ca
 
 Updates to JavaScript and environment settings still require `git pull --ff-only && pm2 restart raycraft-bot`. There is no automated test workflow.
 
+## Suggestions: forum feedback and optional polls
+
+RayBot monitors new forum posts in **#suggestions** (ID `1566922019025588245`).
+Anyone permitted to post there can create a suggestion directly using Discord's
+regular forum **New Post** UI; no bot-owned submission form is required. Players can run
+`/suggest` to find the forum and read instructions.
+
+The server administrator selects the forum's **default reaction emoji** in Discord's
+channel settings. RayBot does not set, remove, count, or add reactions; users support a
+proposal by clicking the native forum reaction. Reaction totals are advisory and can be
+inspected in the forum post. Replies stay in the same discussion thread.
+
+For each **new** forum post, RayBot creates exactly one review card in the
+**moderator-only #suggestion-processing** text channel
+(`1566922399184855041`). The card links to the original post and provides:
+
+- **Review**: mark Under Review, announcing the status in the public forum.
+- **Plan**: mark Planned, with a public status update.
+- **Decline**: require a reason, then publish that reason in the suggestion.
+- **Implemented**: mark the request as implemented.
+- **Create Poll**: open a modal to set a question and two answer choices;
+  RayBot publishes a **seven-day native Discord poll** in #polls
+  (`1548865060313759875`) and links it from the original suggestion and
+  the private review card. The poll is advisory and requires a later
+  moderator decision; poll results do **not** automatically change server rules.
+
+Moderators must have the configured `MODERATOR_ROLE_IDS` role, server ownership,
+or Discord Administrator permissions to use these controls. Helpers alone cannot.
+Closed suggestions (Declined/Implemented) cannot be re-decided through old
+buttons, and a suggestion can receive only one formal poll. State survives bot
+restarts in the existing `DATA_FILE` JSON, alongside modmail and moderation data.
+
+### Setup and recovery
+
+`SUGGESTION_FORUM_ID`, `SUGGESTION_REVIEW_CHANNEL_ID`, and
+`SUGGESTION_POLLS_CHANNEL_ID` default to the three IDs above. They can be overridden
+via `.env`. Keep the processing channel **private to moderators**; @everyone
+must be denied View Channel. RayBot needs View Channel, Send Messages,
+Read Message History, and Embed Links in processing; View Channel and
+Send Messages in the suggestion forum; and View Channel, Send Messages,
+and **Send Polls** in #polls. The bot refuses to post to a review
+channel that is visible to @everyone. Give RayBot access to the forum
+threads so it receives thread-create events.
+
+`/suggestsync post:<thread channel ID>` is moderator-only and repairs missing
+or deleted review cards, including for posts created while RayBot was offline.
+It never duplicates a review card that is still present. When the bot
+comes online, new posts are processed automatically; older forum posts
+are not bulk-imported. This prevents old suggestions from flooding staff.
+
+Native forum reactions are deliberately *not* treated as a binding referendum.
+Moderators retain decision authority and should explain declined proposals.
+The poll action never pings everyone or overrides forum permissions.
+
+### RayBot-only deployment
+
+After reviewing and merging the change, update the **RayBot process only**:
+
+`cd /home/ray/raycraft-bot && git pull --ff-only && npm install --omit=dev && node --check src/suggestions.js && node --test test/suggestionPolicy.test.js && pm2 restart raycraft-bot --update-env && pm2 logs raycraft-bot --lines 40 --nostream`
+
+This does not restart Paper, RayCraft worlds, or unrelated PM2 bots.
+
 ## Ticket opening panel
 
 On startup, RayBot checks Discord channel `1561444742812794940` for its Open a Ticket message and posts or refreshes it without duplication. Use `/ticketpanel` as a Discord administrator to force a refresh. The button DMs the player a ticket category picker; resulting tickets are kept in the private staff forum. The bot needs View Channel, Read Message History, Send Messages, and Embed Links in the public panel channel. Set `TICKET_PANEL_CHANNEL_ID` in `.env` to override the default channel.
