@@ -83,9 +83,25 @@ async function channels(client, config) {
       queue?.type !== ChannelType.GuildText) {
     throw new Error("Suggestion forum or private review channel has the wrong Discord channel type.");
   }
-  // Never leak staff review cards to a public channel, even after a config mistake.
+  // Fail closed if non-moderator roles can see the processing queue.
+  // Administrator roles are allowed because Discord already grants them server-wide access.
+  await guild.roles.fetch();
   if (queue.permissionsFor(guild.roles.everyone)?.has(PermissionFlagsBits.ViewChannel)) {
     throw new Error("Suggestion processing channel is visible to @everyone; refusing to post private review cards.");
+  }
+  for (const role of guild.roles.cache.values()) {
+    if (role.id === guild.roles.everyone.id ||
+        config.moderatorRoles.includes(role.id) ||
+        role.permissions.has(PermissionFlagsBits.Administrator)) continue;
+    if (queue.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) {
+      throw new Error("Non-moderator role " + role.name + " can view the suggestion-processing channel.");
+    }
+  }
+  for (const roleId of config.moderatorRoles) {
+    const role = guild.roles.cache.get(roleId);
+    if (!role || !queue.permissionsFor(role)?.has(PermissionFlagsBits.ViewChannel)) {
+      throw new Error("Configured moderator role cannot view the suggestion-processing channel: " + roleId);
+    }
   }
   const me = await guild.members.fetchMe();
   const permissions = queue.permissionsFor(me);
