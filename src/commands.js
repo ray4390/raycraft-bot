@@ -36,9 +36,18 @@ const commands = [
   new SlashCommandBuilder().setName("purge").setDescription("Remove recent messages (moderators)")
     .addIntegerOption((x) => x.setName("count").setDescription("Between 1 and 100").setMinValue(1).setMaxValue(100).setRequired(true)),
   new SlashCommandBuilder().setName("openticket").setDescription("Open RayCraft modmail through DMs"),
-  new SlashCommandBuilder().setName("suggest").setDescription("How to submit and support RayCraft suggestions"),
-  new SlashCommandBuilder().setName("suggestsync").setDescription("Repair or synchronize a suggestion review card (moderators)")
-    .addStringOption((x) => x.setName("post").setDescription("Forum post channel ID").setRequired(true)),
+  new SlashCommandBuilder().setName("suggest").setDescription("Submit a suggestion for moderator approval")
+    .addStringOption(x => x.setName("category").setDescription("Suggestion category (defaults to Gameplay)")
+      .addChoices(
+        { name: "Gameplay", value: "Gameplay" },
+        { name: "Economy", value: "Economy" },
+        { name: "Plugins", value: "Plugins" },
+        { name: "Building", value: "Building" },
+        { name: "Community", value: "Community" },
+        { name: "Quality of Life", value: "Quality of Life" }
+      )),
+  new SlashCommandBuilder().setName("suggestsync").setDescription("Restore a suggestion processing card (moderators)")
+    .addIntegerOption(x => x.setName("number").setDescription("Suggestion number").setRequired(true).setMinValue(1)),
   new SlashCommandBuilder().setName("ticketpanel").setDescription("Post or refresh the Open a Ticket panel (admins)"),
   new SlashCommandBuilder().setName("ticket").setDescription("RayCraft staff modmail forum")
     .addSubcommand((x) => x.setName("open").setDescription("Start a private DM modmail ticket"))
