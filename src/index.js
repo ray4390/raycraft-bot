@@ -77,15 +77,6 @@ client.on(Events.MessageCreate, async (message) => {
   }
 });
 
-client.on(Events.ThreadCreate, async (thread, newlyCreated) => {
-  if (!newlyCreated) return;
-  try {
-    await suggestions.intake(thread, client, config, store);
-  } catch (error) {
-    console.error("RayBot suggestion intake failed for " + thread.id + ":", error);
-  }
-});
-
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await handleInteraction(interaction, client, config, store);
