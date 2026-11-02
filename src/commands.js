@@ -36,6 +36,9 @@ const commands = [
   new SlashCommandBuilder().setName("purge").setDescription("Remove recent messages (moderators)")
     .addIntegerOption((x) => x.setName("count").setDescription("Between 1 and 100").setMinValue(1).setMaxValue(100).setRequired(true)),
   new SlashCommandBuilder().setName("openticket").setDescription("Open RayCraft modmail through DMs"),
+  new SlashCommandBuilder().setName("suggest").setDescription("How to submit and support RayCraft suggestions"),
+  new SlashCommandBuilder().setName("suggestsync").setDescription("Repair or synchronize a suggestion review card (moderators)")
+    .addStringOption((x) => x.setName("post").setDescription("Forum post channel ID").setRequired(true)),
   new SlashCommandBuilder().setName("ticketpanel").setDescription("Post or refresh the Open a Ticket panel (admins)"),
   new SlashCommandBuilder().setName("ticket").setDescription("RayCraft staff modmail forum")
     .addSubcommand((x) => x.setName("open").setDescription("Start a private DM modmail ticket"))
