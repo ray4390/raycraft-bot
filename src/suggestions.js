@@ -313,6 +313,13 @@ async function createPublicPost(interaction, client, config, record) {
   const tags = appliedTags(forum, { ...record, status: "open" });
   const content = fmt(record) + "\n\n— *Submitted by <@" + record.authorId +
     "> through RayBot · Approved for discussion by moderators*";
+  // Discord regular message content is capped at 2000 characters.
+  // Longer suggestions use an embed without discarding any of the proposal.
+  const messageBody = content.length <= 1950 ? { content } : {
+    content: "Suggestion by <@" + record.authorId + "> · published through RayBot",
+    embeds: [new EmbedBuilder().setColor(0x668db4).setDescription(fmt(record).slice(0,4000))
+      .setFooter({ text: "Approved by RayCraft moderators" })]
+  };
   let posted;
   let mode = "webhook";
   const perms = forum.permissionsFor(me);
@@ -323,7 +330,7 @@ async function createPublicPost(interaction, client, config, record) {
       name: "RayCraft Suggestions", reason: "Approved RayCraft player suggestions"
     });
     posted = await hook.send({
-      threadName: record.title, appliedTags: tags, content,
+      threadName: record.title, appliedTags: tags, ...messageBody,
       username: authorName(record), avatarURL: record.avatarURL || undefined,
       allowedMentions: NO_MENTIONS, wait: true
     });
